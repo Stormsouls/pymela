@@ -1,0 +1,240 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { ArrowLeft, Copy, Check, Download, FileDown, Loader2, Sparkles, RefreshCw } from "lucide-react";
+import type { Bot } from "@/lib/bots";
+import { BotIcon } from "./BotIcon";
+import { cn } from "@/lib/utils";
+
+const FREE_USES = 3;
+
+export function BotForm({ bot }: { bot: Bot }) {
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const set = (name: string, val: string) => setValues((v) => ({ ...v, [name]: val }));
+
+  function usesLeft(): number {
+    if (typeof window === "undefined") return FREE_USES;
+    const used = Number(localStorage.getItem("pymela_uses") || "0");
+    return Math.max(0, FREE_USES - used);
+  }
+
+  function bumpUses() {
+    const used = Number(localStorage.getItem("pymela_uses") || "0");
+    localStorage.setItem("pymela_uses", String(used + 1));
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setResult(null);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: bot.slug, values }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al generar");
+      setResult(data.text);
+      bumpUses();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error inesperado");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function copy() {
+    if (!result) return;
+    await navigator.clipboard.writeText(result);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  }
+
+  function downloadTxt() {
+    if (!result) return;
+    const blob = new Blob([result], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${bot.slug}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function downloadPdf() {
+    if (!result) return;
+    setPdfLoading(true);
+    try {
+      const res = await fetch("/api/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: bot.name, text: result }),
+      });
+      if (!res.ok) throw new Error("No se pudo generar el PDF");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${bot.slug}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al generar PDF");
+    } finally {
+      setPdfLoading(false);
+    }
+  }
+
+  function reset() {
+    setResult(null);
+    setError(null);
+  }
+
+  const left = usesLeft();
+
+  return (
+    <div className="mx-auto w-full max-w-2xl px-5 py-8 sm:py-12">
+      <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-500 hover:text-zinc-900">
+        <ArrowLeft className="h-4 w-4" />
+        Todas las herramientas
+      </Link>
+
+      <div className="mt-6 flex items-start gap-4">
+        <span className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-xl", bot.accent)}>
+          <BotIcon name={bot.icon} className="h-6 w-6" />
+        </span>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">{bot.name}</h1>
+          <p className="mt-1 text-zinc-500">{bot.description}</p>
+        </div>
+      </div>
+
+      {!result && (
+        <form onSubmit={onSubmit} className="mt-8 space-y-5">
+          {bot.fields.map((f) => (
+            <div key={f.name}>
+              <label className="block text-sm font-medium text-zinc-800">
+                {f.label}
+                {f.required && <span className="text-rose-500"> *</span>}
+              </label>
+              {f.help && <p className="mt-0.5 text-xs text-zinc-400">{f.help}</p>}
+
+              {f.type === "textarea" ? (
+                <textarea
+                  value={values[f.name] || ""}
+                  onChange={(e) => set(f.name, e.target.value)}
+                  placeholder={f.placeholder}
+                  rows={4}
+                  required={f.required}
+                  className="mt-1.5 w-full resize-y rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                />
+              ) : f.type === "select" ? (
+                <select
+                  value={values[f.name] || ""}
+                  onChange={(e) => set(f.name, e.target.value)}
+                  required={f.required}
+                  className="mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                >
+                  <option value="" disabled>
+                    Elegí una opción…
+                  </option>
+                  {f.options?.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type={f.type === "number" ? "number" : "text"}
+                  value={values[f.name] || ""}
+                  onChange={(e) => set(f.name, e.target.value)}
+                  placeholder={f.placeholder}
+                  required={f.required}
+                  className="mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                />
+              )}
+            </div>
+          ))}
+
+          {error && (
+            <p className="rounded-lg bg-rose-50 px-3.5 py-2.5 text-sm text-rose-700">{error}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || left <= 0}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 px-5 py-3 font-medium text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Generando…
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4" /> {bot.cta}
+              </>
+            )}
+          </button>
+
+          <p className="text-center text-xs text-zinc-400">
+            {left > 0 ? `Te ${left === 1 ? "queda" : "quedan"} ${left} ${left === 1 ? "prueba gratis" : "pruebas gratis"}` : "Se acabaron tus pruebas gratis"}
+          </p>
+        </form>
+      )}
+
+      {result && (
+        <div className="mt-8">
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+            <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-zinc-800">
+              {result}
+            </pre>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2.5">
+            <button
+              onClick={copy}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3.5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+              {copied ? "¡Copiado!" : "Copiar"}
+            </button>
+            <button
+              onClick={downloadPdf}
+              disabled={pdfLoading}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3.5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+            >
+              {pdfLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+              Descargar PDF
+            </button>
+            <button
+              onClick={downloadTxt}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3.5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              <Download className="h-4 w-4" />
+              .txt
+            </button>
+            <button
+              onClick={reset}
+              className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Generar otro
+            </button>
+          </div>
+
+          {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
