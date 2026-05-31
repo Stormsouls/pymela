@@ -26,6 +26,7 @@ export type Bot = {
   output: BotOutput;
   cta: string;
   fields: BotField[];
+  scrapeUrl?: boolean; // si true, muestra input de URL para pre-rellenar el form
 };
 
 export const BOTS: Bot[] = [
@@ -40,6 +41,7 @@ export const BOTS: Bot[] = [
     accent: "text-emerald-600 bg-emerald-50",
     output: "text",
     cta: "Generar descripción",
+    scrapeUrl: true,
     fields: [
       { name: "producto", label: "¿Qué estás vendiendo?", type: "text", required: true, placeholder: "Ej: Zapatillas Nike Air Max 90" },
       { name: "categoria", label: "Categoría", type: "text", placeholder: "Ej: Indumentaria deportiva" },

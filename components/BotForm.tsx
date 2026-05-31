@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Copy, Check, Download, FileDown, Loader2, Sparkles, RefreshCw } from "lucide-react";
+import { ArrowLeft, Copy, Check, Download, FileDown, Loader2, Sparkles, RefreshCw, Link2, ScanSearch } from "lucide-react";
 import type { Bot } from "@/lib/bots";
 import { BotIcon } from "./BotIcon";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,10 @@ export function BotForm({ bot }: { bot: Bot }) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [scrapeUrl, setScrapeUrl] = useState("");
+  const [scrapeLoading, setScrapeLoading] = useState(false);
+  const [scrapeError, setScrapeError] = useState<string | null>(null);
+  const [scrapeHint, setScrapeHint] = useState<string | null>(null);
 
   const set = (name: string, val: string) => setValues((v) => ({ ...v, [name]: val }));
 
@@ -28,6 +32,29 @@ export function BotForm({ bot }: { bot: Bot }) {
   function bumpUses() {
     const used = Number(localStorage.getItem("pymela_uses") || "0");
     localStorage.setItem("pymela_uses", String(used + 1));
+  }
+
+  async function onScrape() {
+    if (!scrapeUrl.trim()) return;
+    setScrapeLoading(true);
+    setScrapeError(null);
+    try {
+      const res = await fetch("/api/scrape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: scrapeUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al scrapear");
+      // Pre-rellenar los campos con los datos extraídos
+      setValues((prev) => ({ ...prev, ...data.fields }));
+      setScrapeHint(data.hint ?? null);
+      setScrapeUrl("");
+    } catch (err) {
+      setScrapeError(err instanceof Error ? err.message : "Error inesperado");
+    } finally {
+      setScrapeLoading(false);
+    }
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -118,8 +145,49 @@ export function BotForm({ bot }: { bot: Bot }) {
         </div>
       </div>
 
+      {!result && bot.scrapeUrl && (
+        <div className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+          <p className="flex items-center gap-2 text-sm font-medium text-zinc-700">
+            <Link2 className="h-4 w-4 text-zinc-400" />
+            Completar desde un link <span className="font-normal text-zinc-400">(opcional)</span>
+          </p>
+          <p className="mt-0.5 text-xs text-zinc-400">
+            Pegá la URL del producto en MercadoLibre, Amazon, una tienda online u otro marketplace y completamos los campos por vos.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <input
+              type="url"
+              value={scrapeUrl}
+              onChange={(e) => setScrapeUrl(e.target.value)}
+              placeholder="https://articulo.mercadolibre.com.ar/..."
+              className="flex-1 rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), onScrape())}
+            />
+            <button
+              type="button"
+              onClick={onScrape}
+              disabled={scrapeLoading || !scrapeUrl.trim()}
+              className="flex items-center gap-1.5 rounded-xl bg-zinc-800 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+            >
+              {scrapeLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ScanSearch className="h-4 w-4" />
+              )}
+              {scrapeLoading ? "Leyendo…" : "Completar"}
+            </button>
+          </div>
+          {scrapeError && (
+            <p className="mt-2 text-xs text-rose-600">{scrapeError}</p>
+          )}
+          {scrapeHint && (
+            <p className="mt-2 text-xs text-amber-600">⚠ {scrapeHint}</p>
+          )}
+        </div>
+      )}
+
       {!result && (
-        <form onSubmit={onSubmit} className="mt-8 space-y-5">
+        <form onSubmit={onSubmit} className="mt-6 space-y-5">
           {bot.fields.map((f) => (
             <div key={f.name}>
               <label className="block text-sm font-medium text-zinc-800">

@@ -76,21 +76,34 @@ npm run build          # build de producción (pasa OK)
 - GROQ_API_KEY: cargada como env var encrypted (production + preview + development)
 - Deploy: `vercel --token <token> --prod --yes --scope cuentaparaubersuggest-4423s-projects`
 
+## Supabase
+- Project ref: `vudtvffjpoiiukajseuh`
+- URL: `https://vudtvffjpoiiukajseuh.supabase.co`
+- Región: South America (São Paulo)
+- DB password: `PymelaDB2026!`
+- Tabla: `generations` (id, user_id, ip_hash, bot_slug, created_at) con RLS
+- Gating: 3 generaciones / 24h por IP hash (SHA-256 + salt). Sin auth por ahora.
+- `lib/supabase-server.ts` — `checkAndRecordGeneration(ip, slug)` con service_role
+
 ## Estado actual (al cierre — 2026-05-31)
 ✅ Scaffolding Next.js 16 + Tailwind v4 + deps instaladas
 ✅ Registro de 5 bots + prompts LatAm + form dinámico
 ✅ Landing con grilla + sección de precios (free / Pro $5)
 ✅ /api/generate (Groq) probado end-to-end — funciona
 ✅ /api/pdf (pdf-lib) probado — devuelve PDF válido
-✅ Gating free 3 usos (localStorage)
+✅ Gating free server-side (Supabase, 3/día por IP hash)
 ✅ `npm run build` pasa limpio (5 rutas SSG + 2 API)
 ✅ Repo GitHub: https://github.com/Stormsouls/pymela
-✅ Deploy en Vercel: **https://pymela.vercel.app** (GROQ_API_KEY configurada)
-🔴 Sin Supabase (auth/DB/historial), sin pagos, sin login
-🔴 GitHub no conectado a Vercel (el token PAT no tenía `read:org`; push manual por ahora)
+✅ Deploy en Vercel: **https://pymela.vercel.app**
+✅ Env vars Vercel: GROQ_API_KEY + NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY
+🔴 Sin auth de usuarios (login/register) — próximo paso
+🔴 Sin historial de documentos generados
+🔴 Sin pagos (plan Pro)
+🔴 GitHub no conectado a Vercel (push manual por ahora)
 
 ## Próximos pasos (orden sugerido)
-1. Conectar GitHub → Vercel desde el dashboard de Vercel (para auto-deploy en cada push).
+1. Conectar GitHub → Vercel desde el dashboard (auto-deploy en cada push).
+2. Auth de usuarios: Supabase email magic link → historial propio por usuario.
 2. Pulir copy/diseño de landing y de cada bot (el user cuida la estética).
 3. Supabase: auth (anónimo o email) + tabla de generaciones (historial) + mover el gating de free de localStorage a server.
 4. Pagos: MercadoPago (LatAm) + Stripe (USD) → desbloquear Pro ilimitado.
