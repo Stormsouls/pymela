@@ -39,14 +39,32 @@ export function BotForm({ bot }: { bot: Bot }) {
     setScrapeLoading(true);
     setScrapeError(null);
     try {
+      const normalizedUrl = scrapeUrl.trim().replace(/\?$/, ""); // quitar ? al final
+
+      // Paso 1: Jina Reader desde el browser (sin timeout de servidor)
+      // Jina renderiza JS antes de devolver el texto — ideal para SPAs como Alibaba.
+      let jinaContent = "";
+      try {
+        const jinaRes = await fetch(`https://r.jina.ai/${normalizedUrl}`, {
+          headers: { Accept: "application/json", "X-Return-Format": "text" },
+        });
+        if (jinaRes.ok) {
+          const jinaData = await jinaRes.json();
+          if (jinaData.code === 200 && jinaData.data) {
+            const { title = "", description = "", content = "" } = jinaData.data;
+            jinaContent = `Título: ${title}\nDescripción: ${description}\n\n${content}`.slice(0, 12000);
+          }
+        }
+      } catch { /* Jina no disponible, el servidor intentará fetch directo */ }
+
+      // Paso 2: enviar al servidor (con el contenido de Jina si lo tenemos)
       const res = await fetch("/api/scrape", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: scrapeUrl }),
+        body: JSON.stringify({ url: normalizedUrl, content: jinaContent }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error al scrapear");
-      // Pre-rellenar los campos con los datos extraídos
       setValues((prev) => ({ ...prev, ...data.fields }));
       setScrapeHint(data.hint ?? null);
       setScrapeUrl("");

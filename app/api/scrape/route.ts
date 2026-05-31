@@ -113,21 +113,24 @@ ${pageContent}`,
 }
 
 // ─── Handler ─────────────────────────────────────────────────────────────────
+// Acepta dos modos:
+//   { url }             → modo legacy: fetch en el servidor (solo para sites sin JS)
+//   { url, content }    → modo rápido: el browser ya trajo el contenido vía Jina,
+//                         el servidor solo llama a Groq (<3s, entra en el límite de 10s)
 export async function POST(req: NextRequest) {
-  let body: { url?: string };
+  let body: { url?: string; content?: string };
   try { body = await req.json(); } catch {
     return NextResponse.json({ error: "Body inválido" }, { status: 400 });
   }
 
-  const url = body.url?.trim();
+  const url = (body.url ?? "").trim();
+  const content = (body.content ?? "").trim();
+
   if (!url) return NextResponse.json({ error: "Falta la URL" }, { status: 400 });
 
   let parsed: URL;
   try { parsed = new URL(url); } catch {
     return NextResponse.json({ error: "URL inválida" }, { status: 400 });
-  }
-  if (!["http:", "https:"].includes(parsed.protocol)) {
-    return NextResponse.json({ error: "Solo se permiten URLs http/https" }, { status: 400 });
   }
 
   // MercadoLibre: extraer del slug (API requiere auth)
@@ -138,10 +141,10 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // ── Paso 1: obtener contenido vía Jina Reader (maneja SPAs y JS-heavy)
-  let pageContent = await fetchViaJina(url);
+  // ── Modo rápido: content ya viene del browser (Jina corrió en el cliente)
+  let pageContent = content || null;
 
-  // ── Paso 2: si Jina falla, intentar fetch directo + extracción de HTML
+  // ── Modo server: fetch directo para sites con HTML estático (fallback)
   if (!pageContent) {
     try {
       const res = await fetch(url, {
@@ -151,7 +154,7 @@ export async function POST(req: NextRequest) {
           "Accept-Language": "es-419,es;q=0.9",
           "Accept-Encoding": "identity",
         },
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(6000),
       });
       if (res.ok) {
         const html = await res.text();
@@ -160,7 +163,7 @@ export async function POST(req: NextRequest) {
     } catch { /* ignorar */ }
   }
 
-  // ── Paso 3: si no hay contenido útil, caer al slug de la URL
+  // ── Sin contenido útil → slug de URL
   if (!pageContent || pageContent.replace(/\s/g, "").length < 200) {
     const nombre = slugFromUrl(parsed);
     return NextResponse.json({
@@ -171,7 +174,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // ── Paso 4: Groq extrae los campos estructurados
+  // ── Groq extrae los campos estructurados
   const data = await extractWithGroq(pageContent);
 
   if (!data) {
@@ -182,7 +185,6 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Normalizar condición
   const c = (data.condicion ?? "").toLowerCase();
   data.condicion = c.includes("usado") || c.includes("used") ? "Usado"
     : c.includes("reacond") || c.includes("refurb") ? "Reacondicionado"
