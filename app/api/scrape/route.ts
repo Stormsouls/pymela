@@ -54,6 +54,23 @@ function extractText(html: string): string {
   return `${meta ? "[META]\n" + meta + "\n\n" : ""}[TEXTO DE LA PÁGINA]\n${text.slice(0, 10000)}`;
 }
 
+// Extrae un nombre de producto legible del slug de cualquier URL
+function slugFromUrl(u: URL): string {
+  const segments = u.pathname.split("/").filter(Boolean);
+  // Tomar el segmento más largo (suele ser el slug del producto)
+  const slug = segments.sort((a, b) => b.length - a.length)[0] ?? "";
+  return slug
+    .replace(/\.[a-z]{2,5}$/i, "") // quitar extensión .html etc
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\d{6,}\b/g, "") // quitar IDs numéricos largos
+    .replace(/\s{2,}/g, " ")
+    .trim()
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ")
+    .slice(0, 100);
+}
+
 // Detecta si la URL es de MercadoLibre y extrae el item ID
 function extractMlItemId(url: string): string | null {
   // Formatos:
@@ -144,6 +161,17 @@ export async function POST(req: NextRequest) {
   // Extraer texto relevante del HTML
   const pageContent = extractText(html);
 
+  // Si el contenido es muy corto (página de CAPTCHA / SPA vacía), saltar Groq
+  if (pageContent.replace(/\s/g, "").length < 200) {
+    const fallbackName = slugFromUrl(parsed);
+    return NextResponse.json({
+      fields: { producto: fallbackName, categoria: "", condicion: "Nuevo", caracteristicas: "" },
+      hint: fallbackName
+        ? "La página carga con JavaScript y no pudimos leer todos los datos. Completamos el nombre desde el link — revisá y completá el resto."
+        : "Esta página carga con JavaScript. Completá los campos manualmente.",
+    });
+  }
+
   // Pedir a Groq que extraiga los campos del producto
   const completion = await groq.chat.completions.create({
     model: DEFAULT_MODEL,
@@ -188,12 +216,14 @@ ${pageContent}`,
       data = JSON.parse(match[0]);
     }
   } catch {
-    // Último recurso: devolver campos vacíos con hint en lugar de error
-    console.error("[scrape] Groq no devolvió JSON válido:", raw.slice(0, 200));
-    data = { producto: "", categoria: "", condicion: "Nuevo", caracteristicas: "" };
+    // Último recurso: extraer del slug de la URL y avisar
+    console.error("[scrape] Groq no devolvió JSON válido. raw:", raw.slice(0, 200));
+    const fallbackName = slugFromUrl(parsed);
     return NextResponse.json({
-      fields: data,
-      hint: "No pudimos extraer los datos automáticamente. Completá los campos manualmente.",
+      fields: { producto: fallbackName, categoria: "", condicion: "Nuevo", caracteristicas: "" },
+      hint: fallbackName
+        ? "Solo pudimos leer el nombre del link. Revisá y completá el resto de los campos."
+        : "No pudimos extraer los datos. La página puede requerir login o carga con JavaScript. Completá los campos manualmente.",
     });
   }
 
