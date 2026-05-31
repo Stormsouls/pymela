@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
     const res = await fetch(url, {
       headers: BROWSER_HEADERS,
       // Timeout de 8 segundos
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(12000),
     });
     if (!res.ok) {
       return NextResponse.json(
@@ -173,17 +173,28 @@ ${pageContent}`,
 
   const raw = completion.choices[0]?.message?.content?.trim() ?? "";
 
-  // Limpiar posible markdown wrapper
-  const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-
+  // Extraer el primer objeto JSON que aparezca en la respuesta
+  // (Groq a veces rodea el JSON con texto o markdown)
   let data: Record<string, string>;
   try {
-    data = JSON.parse(cleaned);
+    // Intentar parsear directo primero
+    const direct = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+    try {
+      data = JSON.parse(direct);
+    } catch {
+      // Buscar el primer { ... } en el texto
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error("sin JSON");
+      data = JSON.parse(match[0]);
+    }
   } catch {
-    return NextResponse.json(
-      { error: "No se pudo interpretar la respuesta de la IA. Intentá con otra URL." },
-      { status: 502 }
-    );
+    // Último recurso: devolver campos vacíos con hint en lugar de error
+    console.error("[scrape] Groq no devolvió JSON válido:", raw.slice(0, 200));
+    data = { producto: "", categoria: "", condicion: "Nuevo", caracteristicas: "" };
+    return NextResponse.json({
+      fields: data,
+      hint: "No pudimos extraer los datos automáticamente. Completá los campos manualmente.",
+    });
   }
 
   // Normalizar condición a los valores del select
