@@ -69,7 +69,14 @@ npm run dev            # dev server (PORT por env; se probó en 3030)
 npm run build          # build de producción (pasa OK)
 ```
 
-## Estado actual (al cierre — 2026-05-29)
+## Credenciales Vercel
+- Scope / team: `cuentaparaubersuggest-4423s-projects`
+- Project ID: `prj_pXDcWEHuQN3dIZAw9MmBrMW1KdVw`
+- URL producción: **https://pymela.vercel.app**
+- GROQ_API_KEY: cargada como env var encrypted (production + preview + development)
+- Deploy: `vercel --token <token> --prod --yes --scope cuentaparaubersuggest-4423s-projects`
+
+## Estado actual (al cierre — 2026-05-31)
 ✅ Scaffolding Next.js 16 + Tailwind v4 + deps instaladas
 ✅ Registro de 5 bots + prompts LatAm + form dinámico
 ✅ Landing con grilla + sección de precios (free / Pro $5)
@@ -77,12 +84,13 @@ npm run build          # build de producción (pasa OK)
 ✅ /api/pdf (pdf-lib) probado — devuelve PDF válido
 ✅ Gating free 3 usos (localStorage)
 ✅ `npm run build` pasa limpio (5 rutas SSG + 2 API)
-✅ Commit local inicial hecho
-🔴 Sin Supabase (auth/DB/historial), sin pagos, sin deploy, sin login
-🔴 Repo remoto en GitHub: PENDIENTE (gh CLI no instalado; requiere login del user)
+✅ Repo GitHub: https://github.com/Stormsouls/pymela
+✅ Deploy en Vercel: **https://pymela.vercel.app** (GROQ_API_KEY configurada)
+🔴 Sin Supabase (auth/DB/historial), sin pagos, sin login
+🔴 GitHub no conectado a Vercel (el token PAT no tenía `read:org`; push manual por ahora)
 
 ## Próximos pasos (orden sugerido)
-1. Crear repo GitHub + push + deploy a Vercel (env var GROQ_API_KEY).
+1. Conectar GitHub → Vercel desde el dashboard de Vercel (para auto-deploy en cada push).
 2. Pulir copy/diseño de landing y de cada bot (el user cuida la estética).
 3. Supabase: auth (anónimo o email) + tabla de generaciones (historial) + mover el gating de free de localStorage a server.
 4. Pagos: MercadoPago (LatAm) + Stripe (USD) → desbloquear Pro ilimitado.

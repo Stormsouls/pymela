@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { groq, DEFAULT_MODEL } from "@/lib/groq";
 import { buildPrompt } from "@/lib/prompts";
 import { getBot } from "@/lib/bots";
+import { checkAndRecordGeneration } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
 
@@ -42,6 +43,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { error: "El servidor no tiene configurada la API de IA." },
       { status: 503 }
+    );
+  }
+
+  // Verificar límite free (3 generaciones / 24h por IP)
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown";
+
+  const { allowed, used } = await checkAndRecordGeneration(ip, slug);
+  if (!allowed) {
+    return NextResponse.json(
+      {
+        error: "Alcanzaste el límite gratuito (3 generaciones por día). Próximamente plan Pro.",
+        limitReached: true,
+        used,
+      },
+      { status: 429 }
     );
   }
 
