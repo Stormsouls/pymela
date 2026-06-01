@@ -14,33 +14,93 @@ const BASE =
   "No uses markdown con asteriscos ni encabezados con #. Devolvé texto limpio listo para copiar y pegar.";
 
 function descripciones(v: Values): PromptSpec {
-  return {
-    temperature: 0.8,
-    maxTokens: 1200,
-    system:
-      "Sos un experto en e-commerce y copywriting de ventas para MercadoLibre e Instagram en Latinoamérica. " +
-      "Generás publicaciones que posicionan en el buscador y convierten. " +
-      BASE,
-    user: `Generá una publicación de venta para esta plataforma: ${v.plataforma ?? "MercadoLibre"}.
+  const esMl = !v.plataforma || v.plataforma.toLowerCase().includes("mercado");
+  const esInstagram = v.plataforma?.toLowerCase().includes("instagram") || v.plataforma?.toLowerCase().includes("facebook");
+
+  if (esInstagram) {
+    return {
+      temperature: 0.85,
+      maxTokens: 1000,
+      system:
+        "Sos un experto en social commerce y copywriting para Instagram y Facebook en Latinoamérica. " +
+        "Escribís con energía, emojis estratégicos y CTAs claros. Tono cercano pero profesional. " +
+        BASE,
+      user: `Generá una publicación de venta para Instagram/Facebook Marketplace.
 
 Producto: ${v.producto}
 Categoría: ${v.categoria || "(no especificada)"}
 Condición: ${v.condicion}
 Características: ${v.caracteristicas}
 
-Devolvé exactamente estas secciones, en este orden:
+Devolvé exactamente esto:
 
-TÍTULO (máximo 60 caracteres, con palabras clave que la gente busca)
-[acá el título]
+CAPTION PRINCIPAL
+[Hook de 1-2 líneas con emoji + descripción persuasiva de 3-5 líneas + CTA claro. Máximo 300 caracteres visibles antes del "ver más".]
+
+DESCRIPCIÓN COMPLETA
+[Versión extendida con emojis, puntos clave del producto, condición, precio si aplica, y CTA: "Escribinos", "Link en bio", "Disponible ahora".]
+
+HASHTAGS
+[20-25 hashtags relevantes: mezcla de nicho específico (#anilloInteligente), categoría (#tecnología), y locales (#argentinatech #ventasonline). Sin espacios entre ellos.]`,
+    };
+  }
+
+  // MercadoLibre — formato SEO profesional
+  return {
+    temperature: 0.75,
+    maxTokens: 1800,
+    system:
+      "Sos un experto en SEO y ventas para MercadoLibre en Latinoamérica. " +
+      "Conocés las reglas del algoritmo de ML: el título determina el 80% del posicionamiento, " +
+      "la descripción impacta en la conversión. " +
+      "REGLAS DE TÍTULO ML: máximo 60 caracteres, formato [Marca] [Modelo] [Atributo1] [Atributo2] [Atributo3], " +
+      "sin palabras promocionales (oferta, nuevo, urgente, liquidación, gratis), " +
+      "sin signos de exclamación ni caracteres especiales excepto %, " +
+      "incluir las palabras que el comprador tipea en el buscador. " +
+      "REGLAS DE DESCRIPCIÓN ML: usar emojis como bullets y separadores de sección, " +
+      "estructura clara con secciones diferenciadas, máximo 4000 caracteres, " +
+      "incluir especificaciones técnicas completas, contenido del paquete, garantía, " +
+      "mención de cuotas y envío. No usar HTML, solo texto plano + emojis. " +
+      BASE,
+    user: `Generá una publicación completa y SEO-optimizada para MercadoLibre.
+
+Producto: ${v.producto}
+Categoría: ${v.categoria || "(no especificada)"}
+Condición: ${v.condicion}
+Características: ${v.caracteristicas}
+
+Devolvé EXACTAMENTE este formato (respetá los separadores y emojis de sección):
+
+TÍTULO
+[título de máximo 60 caracteres siguiendo las reglas de ML]
 
 DESCRIPCIÓN
-[2 a 4 párrafos persuasivos, beneficios antes que características, sin exagerar]
+[Descripción completa con este esquema de secciones:
 
-PUNTOS CLAVE
-[5 a 7 bullets cortos con lo más importante]
+Primera línea: nombre del producto en mayúsculas con emoji llamativo (ej: 📱 NOMBRE DEL PRODUCTO)
 
-PALABRAS CLAVE SUGERIDAS
-[8 a 12 términos separados por coma para mejorar la búsqueda]`,
+Luego 3-5 beneficios principales con ✅:
+✅ Beneficio 1
+✅ Beneficio 2
+...
+
+Sección 📌 CARACTERÍSTICAS TÉCNICAS con cada spec en línea propia con 🔹
+
+Sección 📦 CONTENIDO DEL PAQUETE con los items incluidos
+
+Sección 🛡️ GARANTÍA con el tiempo/condiciones
+
+Sección 💳 MEDIOS DE PAGO mencionando cuotas sin interés
+
+Sección 🚚 ENVÍOS mencionando envío disponible a todo el país
+
+Cierre con ❓ ¿TENÉS DUDAS? invitando a consultar por el chat]
+
+PALABRAS CLAVE SEO
+[12-15 términos de búsqueda que usa el comprador en ML, separados por coma. Incluir variantes: con y sin tilde, singular y plural, términos técnicos y coloquiales]
+
+TÍTULO VARIANTE A/B
+[Una variante alternativa del título para testear, también de máximo 60 caracteres]`,
   };
 }
 
