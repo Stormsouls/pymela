@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Copy, Check, Download, FileDown, Loader2, Sparkles, RefreshCw, Link2, ScanSearch } from "lucide-react";
+import { ArrowLeft, Copy, Check, Download, FileDown, Loader2, Sparkles, RefreshCw, Link2, ScanSearch, ImageDown, Images } from "lucide-react";
 import type { Bot } from "@/lib/bots";
 import { BotIcon } from "./BotIcon";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,8 @@ export function BotForm({ bot }: { bot: Bot }) {
   const [scrapeLoading, setScrapeLoading] = useState(false);
   const [scrapeError, setScrapeError] = useState<string | null>(null);
   const [scrapeHint, setScrapeHint] = useState<string | null>(null);
+  const [scrapedImages, setScrapedImages] = useState<string[]>([]);
+  const [downloadingAll, setDownloadingAll] = useState(false);
 
   const set = (name: string, val: string) => setValues((v) => ({ ...v, [name]: val }));
 
@@ -42,15 +44,17 @@ export function BotForm({ bot }: { bot: Bot }) {
       const normalizedUrl = scrapeUrl.trim().replace(/\?$/, ""); // quitar ? al final
 
       // Paso 1: Jina Reader vía /api/jina (Edge function, 30s timeout, sin CORS)
-      // Jina renderiza JS antes de devolver el texto — ideal para SPAs como Alibaba.
       let jinaContent = "";
       try {
         const jinaRes = await fetch(`/api/jina?url=${encodeURIComponent(normalizedUrl)}`);
         if (jinaRes.ok) {
           const jinaData = await jinaRes.json();
           if (jinaData.code === 200 && jinaData.data) {
-            const { title = "", description = "", content = "" } = jinaData.data;
+            const { title = "", description = "", content = "", extractedImages = [] } = jinaData.data;
             jinaContent = `Título: ${title}\nDescripción: ${description}\n\n${content}`.slice(0, 12000);
+            if (Array.isArray(extractedImages) && extractedImages.length > 0) {
+              setScrapedImages(extractedImages);
+            }
           }
         }
       } catch { /* si falla, el servidor intenta fetch directo */ }
@@ -142,6 +146,25 @@ export function BotForm({ bot }: { bot: Bot }) {
     setError(null);
   }
 
+  async function downloadImage(imgUrl: string, index: number) {
+    const ext = imgUrl.split("?")[0].split(".").pop()?.toLowerCase() ?? "jpg";
+    const filename = `${bot.slug}-foto-${index + 1}.${ext}`;
+    const a = document.createElement("a");
+    a.href = `/api/img?url=${encodeURIComponent(imgUrl)}&filename=${encodeURIComponent(filename)}`;
+    a.download = filename;
+    a.click();
+  }
+
+  async function downloadAllImages() {
+    setDownloadingAll(true);
+    for (let i = 0; i < scrapedImages.length; i++) {
+      await downloadImage(scrapedImages[i], i);
+      // Pequeño delay para que el browser no bloquee múltiples descargas
+      await new Promise((r) => setTimeout(r, 400));
+    }
+    setDownloadingAll(false);
+  }
+
   const left = usesLeft();
 
   return (
@@ -199,6 +222,50 @@ export function BotForm({ bot }: { bot: Bot }) {
           {scrapeHint && (
             <p className="mt-2 text-xs text-amber-600">⚠ {scrapeHint}</p>
           )}
+        </div>
+      )}
+
+      {/* Galería de imágenes scrapeadas */}
+      {scrapedImages.length > 0 && !result && (
+        <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+          <div className="flex items-center justify-between">
+            <p className="flex items-center gap-2 text-sm font-medium text-zinc-700">
+              <Images className="h-4 w-4 text-zinc-400" />
+              {scrapedImages.length} foto{scrapedImages.length !== 1 ? "s" : ""} encontrada{scrapedImages.length !== 1 ? "s" : ""}
+            </p>
+            <button
+              type="button"
+              onClick={downloadAllImages}
+              disabled={downloadingAll}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+            >
+              {downloadingAll ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImageDown className="h-3 w-3" />}
+              {downloadingAll ? "Descargando…" : "Descargar todas"}
+            </button>
+          </div>
+          <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-6">
+            {scrapedImages.map((img, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => downloadImage(img, i)}
+                title="Clic para descargar"
+                className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-200 bg-white"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={img}
+                  alt={`Foto ${i + 1}`}
+                  className="h-full w-full object-cover transition-opacity group-hover:opacity-70"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+                <span className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
+                  <Download className="h-4 w-4 text-zinc-700" />
+                </span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-zinc-400">Clic en cada foto para descargarla individualmente.</p>
         </div>
       )}
 
