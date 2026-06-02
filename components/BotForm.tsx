@@ -6,8 +6,10 @@ import { ArrowLeft, Copy, Check, Download, FileDown, Loader2, Sparkles, RefreshC
 import type { Bot } from "@/lib/bots";
 import { BotIcon } from "./BotIcon";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { useHistory } from "@/hooks/useHistory";
 
-const FREE_USES = 3;
+const FREE_USES = 9999; // sin límite por ahora
 
 export function BotForm({ bot }: { bot: Bot }) {
   const [values, setValues] = useState<Record<string, string>>({});
@@ -22,6 +24,12 @@ export function BotForm({ bot }: { bot: Bot }) {
   const [scrapeHint, setScrapeHint] = useState<string | null>(null);
   const [scrapedImages, setScrapedImages] = useState<string[]>([]);
   const [downloadingAll, setDownloadingAll] = useState(false);
+
+  const { user, isAnon, signInWithEmail } = useAuth();
+  const { saveGeneration } = useHistory();
+  const [histEmail, setHistEmail] = useState("");
+  const [histEmailSent, setHistEmailSent] = useState(false);
+  const [histEmailLoading, setHistEmailLoading] = useState(false);
 
   const set = (name: string, val: string) => setValues((v) => ({ ...v, [name]: val }));
 
@@ -92,6 +100,15 @@ export function BotForm({ bot }: { bot: Bot }) {
       if (!res.ok) throw new Error(data.error || "Error al generar");
       setResult(data.text);
       bumpUses();
+      // Guardar en historial si el usuario tiene sesión
+      if (user) {
+        saveGeneration({
+          bot_slug: bot.slug,
+          bot_name: bot.name,
+          input_values: values,
+          output_text: data.text,
+        });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error inesperado");
     } finally {
@@ -384,6 +401,44 @@ export function BotForm({ bot }: { bot: Bot }) {
           </div>
 
           {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
+
+          {/* Prompt historial inline — solo para usuarios anónimos */}
+          {isAnon && (
+            <div className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3">
+              {histEmailSent ? (
+                <p className="text-sm text-indigo-700">✅ Revisá tu email para guardar el historial.</p>
+              ) : (
+                <>
+                  <p className="text-sm text-indigo-700">
+                    <strong>¿Querés guardar esta generación?</strong> Ingresá tu email — guardamos todo tu historial.
+                  </p>
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      setHistEmailLoading(true);
+                      await signInWithEmail(histEmail);
+                      setHistEmailLoading(false);
+                      setHistEmailSent(true);
+                    }}
+                    className="mt-2 flex gap-2"
+                  >
+                    <input
+                      type="email"
+                      value={histEmail}
+                      onChange={(e) => setHistEmail(e.target.value)}
+                      placeholder="tu@email.com"
+                      required
+                      className="flex-1 rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-400 focus:outline-none"
+                    />
+                    <button type="submit" disabled={histEmailLoading}
+                      className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                      {histEmailLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Guardar"}
+                    </button>
+                  </form>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

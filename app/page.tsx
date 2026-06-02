@@ -1,4 +1,5 @@
-import { Sparkles, Zap, ShieldCheck } from "lucide-react";
+import { Sparkles, Zap, ShieldCheck, BookMarked } from "lucide-react";
+import Link from "next/link";
 import { BOTS } from "@/lib/bots";
 import { BotCard } from "@/components/BotCard";
 
@@ -20,13 +21,16 @@ export default function Home() {
             Presupuestos, descripciones de productos, respuestas a reseñas, cobranzas y documentos
             legales. Completás un formulario, listo.
           </p>
-          <div className="mt-8 flex items-center justify-center gap-6 text-sm text-zinc-500">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm text-zinc-500">
             <span className="inline-flex items-center gap-1.5">
               <Zap className="h-4 w-4 text-indigo-500" /> Sin instalar nada
             </span>
             <span className="inline-flex items-center gap-1.5">
               <ShieldCheck className="h-4 w-4 text-indigo-500" /> Pensado para LatAm
             </span>
+            <Link href="/historial" className="inline-flex items-center gap-1.5 text-indigo-600 hover:underline">
+              <BookMarked className="h-4 w-4" /> Guardá tu historial →
+            </Link>
           </div>
         </div>
       </section>

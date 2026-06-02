@@ -16,7 +16,7 @@ export function getSupabaseServer() {
   return client;
 }
 
-const FREE_LIMIT = 3;
+const FREE_LIMIT = 9999; // sin límite por ahora
 
 // Hash simple de IP para no guardar datos personales
 async function hashIp(ip: string): Promise<string> {

@@ -43,12 +43,15 @@ function extractImages(content: string, imagesData: Record<string, unknown> | nu
 
 function isProductImage(url: string): boolean {
   const lower = url.toLowerCase();
-  // Descartar logos, iconos, banners genéricos
-  const skip = ["logo", "icon", "favicon", "banner", "sprite", "pixel", "tracking",
-    "avatar", "badge", ".svg", "1x1", "gif", "placeholder", "blank", "_ttd_"];
+  // Descartar logos, iconos, tracking pixels, SVGs
+  const skip = ["favicon", "sprite", "pixel", "tracking", "badge", ".svg",
+    "1x1", "placeholder", "blank", "_ttd_", "logo._", "error/"];
   if (skip.some((s) => lower.includes(s))) return false;
-  // Debe ser una imagen real
-  return /\.(jpg|jpeg|png|webp|avif)(\?|$)/i.test(lower) || lower.includes("/image") || lower.includes("/img");
+  // Aceptar si tiene extensión de imagen conocida o URL de CDN de imagen
+  const hasImgExt = /\.(jpg|jpeg|png|webp|avif|bmp)(\?|_|$)/i.test(lower);
+  const isImgCdn = /\/(img|image|images|photo|photos|media|product|item|goods)\//i.test(lower);
+  const isImgHost = lower.includes("cdn") || lower.includes("imgextra") || lower.includes("alicdn") || lower.includes("mlstatic");
+  return hasImgExt || isImgCdn || isImgHost;
 }
 
 export async function GET(req: Request) {
