@@ -202,12 +202,189 @@ Redactá el documento completo con cláusulas numeradas, espacios para datos fal
   };
 }
 
+function precios(v: Values): PromptSpec {
+  return {
+    temperature: 0.6,
+    maxTokens: 1000,
+    system:
+      "Sos un experto en pricing y estrategia comercial para revendedores y PyMEs de Latinoamérica. " +
+      "Analizás costos, competencia y percepción de valor para recomendar precios con fundamento. " +
+      BASE,
+    user: `Analizá el siguiente caso y recomendá un precio de venta.
+
+Producto: ${v.producto}
+Costo de compra: ${v.costo} ${v.moneda}
+Margen objetivo: ${v.margen_objetivo ? v.margen_objetivo + "%" : "el que tenga más sentido para el mercado"}
+Diferencial del producto: ${v.diferencial || "(no especificado)"}
+Precios de la competencia:
+${v.competencia || "(no se proporcionaron precios de la competencia)"}
+
+Devolvé exactamente estas secciones:
+
+PRECIO SUGERIDO
+[precio en ${v.moneda} con justificación de 2-3 líneas: por qué ese número, qué posición ocupa en el mercado]
+
+RANGO DE PRECIOS
+Mínimo viable: [precio en ${v.moneda} — margen mínimo para no perder]
+Óptimo: [precio en ${v.moneda} — mejor balance volumen/margen]
+Premium: [precio en ${v.moneda} — si el diferencial lo justifica]
+
+MARGEN ESTIMADO
+[margen en % y en ${v.moneda} para el precio sugerido, asumiendo el costo indicado]
+
+ARGUMENTO DE VENTA
+[2-3 oraciones para justificarle el precio al comprador que pregunta "¿por qué tan caro?" o "¿hacés descuento?"]
+
+ALERTA
+[si hay algo que cuidar: competencia de precio muy bajo, margen insuficiente, etc.]`,
+  };
+}
+
+function preguntasMl(v: Values): PromptSpec {
+  return {
+    temperature: 0.7,
+    maxTokens: 500,
+    system:
+      "Sos un vendedor profesional de MercadoLibre en Latinoamérica. " +
+      "Respondés preguntas de compradores de forma clara, amable y que incentive la compra. " +
+      "Nunca mentís ni exagerás. Si no sabés algo, lo decís y ofrecés una alternativa. " +
+      "Siempre terminás con algo que facilite el cierre: 'Podés comprar con total confianza', 'Cualquier otra consulta estoy disponible', etc. " +
+      BASE,
+    user: `Producto: ${v.producto}
+Información disponible: ${v.info_extra || "(usar solo lo que se puede inferir del producto)"}
+Tono: ${v.tono || "Cercano y amigable"}
+
+Pregunta del comprador:
+"""
+${v.pregunta}
+"""
+
+Escribí UNA respuesta lista para publicar en MercadoLibre (máximo 4 oraciones). Sin títulos ni opciones extra.`,
+  };
+}
+
+function fichaTecnica(v: Values): PromptSpec {
+  return {
+    temperature: 0.3,
+    maxTokens: 1600,
+    system:
+      "Sos un asistente que genera fichas técnicas de producto profesionales para distribuidores, revendedores y vendedores de Latinoamérica. " +
+      "Las fichas son claras, ordenadas y reflejan fielmente las specs del producto. " +
+      BASE,
+    user: `Generá una ficha técnica completa y prolija con estos datos.
+
+Producto: ${v.producto}
+Marca: ${v.marca || "(no especificada)"}
+Descripción breve: ${v.descripcion_corta || "(inferir de las specs)"}
+Especificaciones:
+${v.especificaciones}
+Contenido de la caja: ${v.contenido_caja || "(estándar según el tipo de producto)"}
+Garantía: ${v.garantia || "(no especificada)"}
+
+Estructurá la ficha así:
+
+FICHA TÉCNICA — [NOMBRE DEL PRODUCTO EN MAYÚSCULAS]
+
+DESCRIPCIÓN
+[2-3 oraciones sobre para qué sirve y a quién está dirigido]
+
+ESPECIFICACIONES TÉCNICAS
+[cada spec en su propia línea con formato: Nombre: Valor]
+
+CONTENIDO DE LA CAJA
+[lista de ítems incluidos]
+
+GARANTÍA Y SOPORTE
+[condiciones de garantía]
+
+Devolvé texto limpio y prolijo, sin emojis, listo para copiar en un PDF.`,
+  };
+}
+
+function traduccion(v: Values): PromptSpec {
+  const idioma = v.idioma_destino ?? "Portugués (Brasil)";
+  const esPt = idioma.toLowerCase().includes("portugu");
+  const locale = esPt ? "brasileño (pt-BR)" : idioma.toLowerCase().includes("eeuu") ? "americano (en-US)" : "internacional (en)";
+  return {
+    temperature: 0.7,
+    maxTokens: 1800,
+    system:
+      `Sos un traductor experto en e-commerce y copywriting. Traducís publicaciones de venta al ${idioma} con ${locale}, ` +
+      "adaptando el tono, la terminología y las referencias culturales al mercado de destino. " +
+      "No traducís literalmente: adaptás para que suene natural y persuasivo en el idioma destino. " +
+      "Conservás emojis, bullets y la estructura original si corresponde. " +
+      (esPt ? "Usás las unidades de medida del sistema métrico decimal estándar en Brasil. " : "Convertís pesos/ARS/MXN/COP a la moneda relevante si aplica. "),
+    user: `Traducí esta publicación de venta al ${idioma} para publicar en ${v.plataforma || "un marketplace"}.
+
+Notas de adaptación: ${v.notas || "(ninguna)"}
+
+Publicación original:
+"""
+${v.texto}
+"""
+
+Devolvé:
+TRADUCCIÓN
+[la publicación completa traducida y adaptada]
+
+NOTAS DE ADAPTACIÓN
+[si cambiaste algo relevante: unidades, precios, términos locales, etc.]`,
+  };
+}
+
+function catalogo(v: Values): PromptSpec {
+  return {
+    temperature: 0.4,
+    maxTokens: 2500,
+    system:
+      "Sos un asistente que genera catálogos de productos profesionales para PyMEs y revendedores de Latinoamérica. " +
+      "Organizás los productos de forma clara, con descripciones atractivas y precios bien presentados. " +
+      BASE,
+    user: `Generá un catálogo de productos profesional con estos datos.
+
+Negocio: ${v.negocio}
+Moneda: ${v.moneda}
+Validez de precios: ${v.validez || "(no especificada)"}
+Contacto: ${v.contacto || "(no especificado)"}
+
+Productos:
+${v.productos}
+
+Estructurá el catálogo así:
+
+CATÁLOGO DE PRODUCTOS
+${v.negocio.toUpperCase()}
+${v.validez ? "Precios válidos: " + v.validez : ""}
+
+[Para cada producto, crear una entrada con este formato:]
+─────────────────────
+[NOMBRE DEL PRODUCTO]
+Precio: [precio en ${v.moneda}]
+[Descripción breve de 1-2 líneas resaltando el beneficio principal]
+Características: [specs clave en una línea]
+─────────────────────
+
+[Al final:]
+CONTACTO Y PEDIDOS
+${v.contacto || "[completar con datos de contacto]"}
+
+[Pie con texto profesional invitando a consultar]
+
+Devolvé texto limpio y prolijo listo para convertir a PDF.`,
+  };
+}
+
 const BUILDERS: Record<string, (v: Values) => PromptSpec> = {
   descripciones,
   resenas,
   cobranza,
   presupuestos,
   legales,
+  precios,
+  "preguntas-ml": preguntasMl,
+  "ficha-tecnica": fichaTecnica,
+  traduccion,
+  catalogo,
 };
 
 export function buildPrompt(slug: string, values: Values): PromptSpec | null {

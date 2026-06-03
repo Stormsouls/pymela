@@ -1,6 +1,6 @@
-import { ShoppingBag, Star, Mail, FileText, Scale, type LucideProps } from "lucide-react";
+import { ShoppingBag, Star, Mail, FileText, Scale, TrendingUp, MessageCircleQuestion, ClipboardList, Languages, BookImage, type LucideProps } from "lucide-react";
 
-const MAP = { ShoppingBag, Star, Mail, FileText, Scale } as const;
+const MAP = { ShoppingBag, Star, Mail, FileText, Scale, TrendingUp, MessageCircleQuestion, ClipboardList, Languages, BookImage } as const;
 
 export type BotIconName = keyof typeof MAP;
 
