@@ -31,6 +31,9 @@ export default function Home() {
             <Link href="/historial" className="inline-flex items-center gap-1.5 text-indigo-600 hover:underline">
               <BookMarked className="h-4 w-4" /> Guardá tu historial →
             </Link>
+            <Link href="/conectar-ml" className="inline-flex items-center gap-1.5 rounded-full bg-yellow-400 px-3 py-1 text-xs font-semibold text-zinc-900 hover:bg-yellow-300">
+              ⚡ Auto-responder ML
+            </Link>
           </div>
         </div>
       </section>
