@@ -9,49 +9,43 @@ export async function GET(req: NextRequest) {
   const state = req.nextUrl.searchParams.get("state") ?? "";
   const error = req.nextUrl.searchParams.get("error");
 
-  if (error) {
-    return NextResponse.redirect(new URL("/conectar-ml?error=denied", req.url));
-  }
-
-  if (!code) {
-    return NextResponse.redirect(new URL("/conectar-ml?error=no_code", req.url));
-  }
+  if (error) return NextResponse.redirect(new URL("/conectar-ml?error=denied", req.url));
+  if (!code) return NextResponse.redirect(new URL("/conectar-ml?error=no_code", req.url));
 
   try {
-    // Decodificar state para obtener el user_id de Supabase
+    const tokens = await exchangeCode(code);
+    const mlUser = await mlFetch(`/users/${tokens.user_id}`, tokens.access_token);
+    const db = getSupabaseServer();
+    const mlUserId = String(tokens.user_id);
+    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
+
+    // Intentar recuperar userId de Supabase desde el state
     let userId = "";
     try {
       const decoded = JSON.parse(Buffer.from(state, "base64url").toString());
       userId = decoded.userId ?? "";
     } catch { /* ignorar */ }
 
-    // Intercambiar código por tokens
-    const tokens = await exchangeCode(code);
-
-    // Obtener datos del usuario de ML
-    const mlUser = await mlFetch(`/users/${tokens.user_id}`, tokens.access_token);
-
-    const db = getSupabaseServer();
-    const mlUserId = String(tokens.user_id);
-    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
-
-    // Si no tenemos userId de Supabase, lo buscamos por ml_user_id o creamos uno anónimo
+    // Si no hay userId, buscar conexión existente
     if (!userId) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: existing } = await (db.from("ml_connections") as any)
-        .select("user_id")
-        .eq("ml_user_id", mlUserId)
-        .single();
+        .select("user_id").eq("ml_user_id", mlUserId).single();
       userId = existing?.user_id ?? "";
     }
 
+    // Si aún no hay userId, crear uno con email interno para vincular
     if (!userId) {
-      // Crear usuario anónimo en Supabase para este vendedor
-      const { data } = await db.auth.admin.createUser({ email_confirm: true });
-      userId = data.user?.id ?? "";
+      const { data, error: cErr } = await db.auth.admin.createUser({
+        email: `ml_${mlUserId}@pymela.internal`,
+        email_confirm: true,
+        user_metadata: { ml_user_id: mlUserId },
+      });
+      if (!cErr && data.user) userId = data.user.id;
     }
 
-    // Upsert en ml_connections
+    if (!userId) throw new Error("No se pudo crear/encontrar usuario Supabase");
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (db.from("ml_connections") as any).upsert({
       user_id: userId,
@@ -63,9 +57,17 @@ export async function GET(req: NextRequest) {
       updated_at: new Date().toISOString(),
     }, { onConflict: "ml_user_id" });
 
-    return NextResponse.redirect(new URL("/conectar-ml?success=1", req.url));
+    // Guardar ml_user_id en cookie para que la página pueda identificar la conexión
+    const redirect = NextResponse.redirect(new URL("/conectar-ml?success=1", req.url));
+    redirect.cookies.set("pymela_ml_uid", mlUserId, {
+      path: "/",
+      httpOnly: false,
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+    });
+    return redirect;
   } catch (err) {
-    console.error("[ml/callback]", err);
+    console.error("[ml/callback]", err instanceof Error ? err.message : err);
     return NextResponse.redirect(new URL("/conectar-ml?error=auth_failed", req.url));
   }
 }
