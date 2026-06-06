@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
       ml_user_id: mlUserId,
       ml_nickname: mlUser.nickname ?? mlUser.first_name ?? "Vendedor",
       access_token: tokens.access_token,
-      refresh_token: tokens.refresh_token,
+      refresh_token: tokens.refresh_token ?? "",
       token_expires_at: expiresAt,
       updated_at: new Date().toISOString(),
     }, { onConflict: "ml_user_id" });
