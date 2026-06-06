@@ -167,13 +167,24 @@ export default function ConectarMLPage() {
             {/* Toggles */}
             <div className="rounded-2xl border border-zinc-200 bg-white divide-y divide-zinc-100">
               {([
-                { field: "auto_respond" as const, label: "Respuesta automática", desc: conn.auto_respond ? "Activada — respondemos en segundos" : "Pausada — las preguntas quedan sin responder" },
-                { field: "review_mode" as const, label: "Modo revisión", desc: conn.review_mode ? "Activado — revisás cada respuesta antes de publicar" : "Desactivado — publicamos sin que tengas que revisar" },
-              ]).map(({ field, label, desc }) => (
-                <div key={field} className="flex items-center justify-between px-5 py-4">
+                {
+                  field: "auto_respond" as const,
+                  label: "Respuesta automática",
+                  desc: conn.auto_respond ? "Activada — respondemos en segundos" : "Pausada — las preguntas quedan sin responder",
+                  hint: null,
+                },
+                {
+                  field: "review_mode" as const,
+                  label: "Modo revisión",
+                  desc: conn.review_mode ? "Activado — revisás cada respuesta antes de publicar" : "Desactivado — publicamos sin que tengas que revisar",
+                  hint: "Cuando llega una pregunta, la IA genera la respuesta y la deja como borrador. Volvé a esta página para verla, editarla y publicarla. No hay notificación automática por ahora.",
+                },
+              ]).map(({ field, label, desc, hint }) => (
+                <div key={field} className="flex items-start justify-between px-5 py-4 gap-4">
                   <div>
                     <p className="font-medium text-zinc-900">{label}</p>
                     <p className="mt-0.5 text-sm text-zinc-500">{desc}</p>
+                    {hint && conn[field as keyof MlConn] && <p className="mt-1.5 text-xs text-zinc-400 max-w-xs">{hint}</p>}
                   </div>
                   <button
                     onClick={() => toggle(field)}
@@ -192,8 +203,11 @@ export default function ConectarMLPage() {
                 <BookOpen className="h-4 w-4 text-zinc-400" />
                 <h3 className="font-medium text-zinc-900">Instrucciones para la IA</h3>
               </div>
-              <p className="mb-3 text-sm text-zinc-500">
-                Escribí todo lo que la IA necesita saber para responder bien: políticas de envío, garantía, tono, preguntas frecuentes con sus respuestas, frases a usar o evitar.
+              <p className="mb-1 text-sm text-zinc-500">
+                La IA ya lee automáticamente el título, descripción, precio y garantía de cada publicación. Acá agregás todo lo demás: políticas de envío, tono, preguntas frecuentes, frases a usar o evitar.
+              </p>
+              <p className="mb-3 text-xs text-zinc-400">
+                Estas instrucciones aplican a <strong className="text-zinc-500">todas tus publicaciones</strong>. Si tenés reglas específicas por producto, indicalo explícitamente (ej: "Para el producto X, decir que...").
               </p>
               <textarea
                 value={playbook}
@@ -253,9 +267,9 @@ export default function ConectarMLPage() {
                               className="w-full resize-none rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none"
                             />
                             <div className="mt-2 flex gap-2">
-                              <button onClick={() => draftAction(d.id, "edit", editingDraft.text)} disabled={actionLoading === d.id + "edit"}
+                              <button onClick={() => draftAction(d.id, "edit", editingDraft.text)} disabled={actionLoading === (d.id + "edit")}
                                 className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50">
-                                {actionLoading === d.id + "edit" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                                {actionLoading === (d.id + "edit") ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
                                 Publicar editada
                               </button>
                               <button onClick={() => setEditingDraft(null)} className="text-xs text-zinc-400 hover:text-zinc-700">Cancelar</button>
@@ -267,7 +281,7 @@ export default function ConectarMLPage() {
                             <div className="mt-3 flex gap-2 flex-wrap">
                               <button onClick={() => draftAction(d.id, "approve")} disabled={!!actionLoading}
                                 className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50">
-                                {actionLoading === d.id + "approve" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                                {actionLoading === (d.id + "approve") ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
                                 Publicar
                               </button>
                               <button onClick={() => setEditingDraft({ id: d.id, text: d.draft_response })}
@@ -291,11 +305,12 @@ export default function ConectarMLPage() {
             <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-5 text-sm text-zinc-500">
               <p className="font-medium text-zinc-700 mb-2">¿Cómo funciona?</p>
               <ul className="space-y-1.5">
-                <li>✓ Un comprador hace una pregunta en tu publicación</li>
-                <li>✓ MercadoLibre avisa a Pymela en tiempo real</li>
-                <li>✓ La IA responde usando los datos del producto + tus instrucciones</li>
-                <li>✓ {conn.review_mode ? "Guardamos el borrador para que lo apruebes" : "Se publica automáticamente en segundos"}</li>
+                <li>✓ Un comprador hace una pregunta en cualquiera de tus publicaciones</li>
+                <li>✓ MercadoLibre avisa a Pymela en tiempo real vía webhook</li>
+                <li>✓ La IA lee los datos del producto (título, descripción, precio) + tus instrucciones y genera la respuesta</li>
+                <li>✓ {conn.review_mode ? "La respuesta queda como borrador — volvé a esta página para revisarla y publicarla" : "La respuesta se publica directamente en la pregunta, en segundos"}</li>
               </ul>
+              <p className="mt-3 text-xs text-zinc-400">Funciona con todas tus publicaciones activas, sin configurar nada por producto.</p>
             </div>
 
             <button onClick={disconnect} className="text-sm text-zinc-400 hover:text-rose-600">
