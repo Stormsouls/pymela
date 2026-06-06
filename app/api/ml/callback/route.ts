@@ -36,12 +36,20 @@ export async function GET(req: NextRequest) {
 
     // Si aún no hay userId, crear uno con email interno para vincular
     if (!userId) {
+      const internalEmail = `ml_${mlUserId}@pymela.internal`;
       const { data, error: cErr } = await db.auth.admin.createUser({
-        email: `ml_${mlUserId}@pymela.internal`,
+        email: internalEmail,
         email_confirm: true,
         user_metadata: { ml_user_id: mlUserId },
       });
-      if (!cErr && data.user) userId = data.user.id;
+      if (!cErr && data.user) {
+        userId = data.user.id;
+      } else {
+        // Ya existe — buscarlo por email
+        const { data: list } = await db.auth.admin.listUsers({ perPage: 1000 });
+        const found = list?.users?.find((u) => u.email === internalEmail);
+        if (found) userId = found.id;
+      }
     }
 
     if (!userId) throw new Error("No se pudo crear/encontrar usuario Supabase");
