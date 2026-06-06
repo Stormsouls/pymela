@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     if (!userId) throw new Error("No se pudo crear/encontrar usuario Supabase");
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (db.from("ml_connections") as any).upsert({
+    const { error: upsertErr } = await (db.from("ml_connections") as any).upsert({
       user_id: userId,
       ml_user_id: mlUserId,
       ml_nickname: mlUser.nickname ?? mlUser.first_name ?? "Vendedor",
@@ -64,6 +64,7 @@ export async function GET(req: NextRequest) {
       token_expires_at: expiresAt,
       updated_at: new Date().toISOString(),
     }, { onConflict: "ml_user_id" });
+    if (upsertErr) throw new Error(`DB upsert failed: ${upsertErr.message}`);
 
     // Guardar ml_user_id en cookie para que la página pueda identificar la conexión
     const redirect = NextResponse.redirect(new URL("/conectar-ml?success=1", req.url));
