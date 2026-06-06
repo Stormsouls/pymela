@@ -150,7 +150,7 @@ export default function ConectarMLPage() {
         {error && error !== "denied" && (
           <div className="mt-6 flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-rose-700">
             <AlertCircle className="h-4 w-4 shrink-0" />
-            <span className="text-sm">Hubo un error al conectar ({error}). Intentá de nuevo.</span>
+            <span className="text-sm">Error: {decodeURIComponent(error)}. Intentá de nuevo.</span>
           </div>
         )}
 

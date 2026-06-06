@@ -67,7 +67,10 @@ export async function GET(req: NextRequest) {
     });
     return redirect;
   } catch (err) {
-    console.error("[ml/callback]", err instanceof Error ? err.message : err);
-    return NextResponse.redirect(new URL("/conectar-ml?error=auth_failed", req.url));
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[ml/callback]", msg);
+    const url = new URL("/conectar-ml", req.url);
+    url.searchParams.set("error", encodeURIComponent(msg).slice(0, 200));
+    return NextResponse.redirect(url);
   }
 }
