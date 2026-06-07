@@ -42,24 +42,26 @@ export function BotCard({ bot, index = 0 }: { bot: Bot; index?: number }) {
       {/* Gradient border glow on hover */}
       <div className="pointer-events-none absolute -inset-px z-0 rounded-3xl bg-gradient-to-br from-indigo-500/0 via-purple-500/0 to-pink-500/0 opacity-0 transition-opacity duration-500 group-hover:from-indigo-500/20 group-hover:via-purple-500/20 group-hover:to-pink-500/20 group-hover:opacity-100" />
 
-      {/* Cover image */}
-      <div className="relative z-10 h-44 overflow-hidden">
+      {/* Cover image — se desvanece con máscara, sin línea de corte */}
+      <div className="relative z-10 h-48">
         <img
           src={`${bot.image}?auto=format&fit=crop&w=700&q=75`}
           alt={bot.name}
           loading="lazy"
-          className="h-full w-full object-cover blur-[2px] brightness-[.92] transition-all duration-700 ease-out group-hover:scale-110 group-hover:blur-0 group-hover:brightness-100"
+          style={{
+            maskImage: "linear-gradient(to bottom, black 0%, black 40%, transparent 92%)",
+            WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 40%, transparent 92%)",
+          }}
+          className="h-full w-full object-cover blur-[2px] brightness-95 transition-all duration-700 ease-out group-hover:scale-105 group-hover:blur-0 group-hover:brightness-100"
         />
-        {/* Degradé suave hacia el blanco del body — sin corte crudo */}
-        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-white via-white/80 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-black/15" />
         <span className="glass absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold text-zinc-700 shadow-sm">
           {bot.category}
         </span>
       </div>
 
       {/* Body */}
-      <div className="relative z-10 flex flex-1 flex-col px-5 pb-5 pt-0">
+      <div className="relative z-10 -mt-8 flex flex-1 flex-col px-5 pb-5 pt-0">
         <span
           className={cn(
             "lift-z -mt-7 flex items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg ring-4 ring-white transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3",

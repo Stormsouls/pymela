@@ -2,23 +2,15 @@ import { Sparkles, Zap, ShieldCheck, BookMarked, ArrowRight } from "lucide-react
 import Link from "next/link";
 import { BOTS } from "@/lib/bots";
 import { BotCard } from "@/components/BotCard";
-import { AnimatedBackground } from "@/components/AnimatedBackground";
+import { HeroBackground } from "@/components/HeroBackground";
 
 export default function Home() {
   return (
     <main className="min-h-screen overflow-hidden bg-zinc-50">
       {/* Hero — oscuro, tecnológico, con constelación animada */}
       <section className="relative overflow-hidden bg-slate-950">
-        {/* Capa de fondo animado */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900" />
-          <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-indigo-600/30 blur-3xl animate-blob" />
-          <div className="absolute right-0 top-10 h-96 w-96 rounded-full bg-purple-600/30 blur-3xl animate-blob delay-200" />
-          <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-fuchsia-600/20 blur-3xl animate-blob delay-500" />
-          <AnimatedBackground />
-          {/* Funde el hero oscuro hacia el zinc-50 de las cards */}
-          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-zinc-50" />
-        </div>
+        {/* Fondo animado con parallax + formas flotantes */}
+        <HeroBackground />
 
         <div className="relative mx-auto max-w-5xl px-5 pt-24 pb-28 text-center sm:pt-32">
           <span className="animate-fade-up inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-medium text-indigo-100 shadow-sm backdrop-blur-sm">

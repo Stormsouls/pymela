@@ -38,7 +38,7 @@ export const BOTS: Bot[] = [
     description:
       "Pegá la pregunta del comprador y obtené una respuesta clara, profesional y que incentive la compra.",
     icon: "MessageCircleQuestion",
-    image: "https://images.unsplash.com/photo-1577563908411-5077b6dc7624",
+    image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f",
     category: "Atención al cliente",
     accent: "from-teal-400 to-emerald-500",
     output: "text",
@@ -57,7 +57,7 @@ export const BOTS: Bot[] = [
     description:
       "Convertí los datos de tu producto en un título optimizado, bullets y una descripción persuasiva lista para publicar.",
     icon: "ShoppingBag",
-    image: "https://images.unsplash.com/photo-1472851294608-062f824d29cc",
+    image: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d",
     category: "Ventas",
     accent: "from-emerald-400 to-green-500",
     output: "text",
