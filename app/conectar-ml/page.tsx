@@ -306,7 +306,7 @@ export default function ConectarMLPage() {
               <p className="font-medium text-zinc-700 mb-2">¿Cómo funciona?</p>
               <ul className="space-y-1.5">
                 <li>✓ Un comprador hace una pregunta en cualquiera de tus publicaciones</li>
-                <li>✓ MercadoLibre avisa a Pymela en tiempo real vía webhook</li>
+                <li>✓ MercadoLibre avisa a Pymela en tiempo real</li>
                 <li>✓ La IA lee los datos del producto (título, descripción, precio) + tus instrucciones y genera la respuesta</li>
                 <li>✓ {conn.review_mode ? "La respuesta queda como borrador — volvé a esta página para revisarla y publicarla" : "La respuesta se publica directamente en la pregunta, en segundos"}</li>
               </ul>

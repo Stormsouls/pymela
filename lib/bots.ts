@@ -21,6 +21,7 @@ export type Bot = {
   tagline: string;
   description: string;
   icon: string; // nombre de icono lucide-react
+  image: string; // URL de foto de portada (Unsplash, uso libre)
   category: string;
   accent: string; // clase tailwind para el acento de color
   output: BotOutput;
@@ -31,12 +32,32 @@ export type Bot = {
 
 export const BOTS: Bot[] = [
   {
+    slug: "preguntas-ml",
+    name: "Respuestas a preguntas de MercadoLibre",
+    tagline: "Contestá consultas de compradores en segundos.",
+    description:
+      "Pegá la pregunta del comprador y obtené una respuesta clara, profesional y que incentive la compra.",
+    icon: "MessageCircleQuestion",
+    image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d",
+    category: "Atención al cliente",
+    accent: "text-teal-600 bg-teal-50",
+    output: "text",
+    cta: "Generar respuesta",
+    fields: [
+      { name: "producto", label: "¿Qué producto es?", type: "text", required: true, placeholder: "Ej: Smart Ring Yawell R09" },
+      { name: "pregunta", label: "Pregunta del comprador", type: "textarea", required: true, placeholder: "Pegá la pregunta tal cual la escribió el comprador." },
+      { name: "info_extra", label: "Información del producto que ayuda a responder", type: "textarea", placeholder: "Specs, garantía, stock, envío, compatibilidad… lo que sea relevante para esta pregunta." },
+      { name: "tono", label: "Tono", type: "select", options: ["Cercano y amigable", "Formal", "Breve y directo"] },
+    ],
+  },
+  {
     slug: "descripciones",
     name: "Descripciones para MercadoLibre",
     tagline: "Título SEO + descripción que vende, en segundos.",
     description:
       "Convertí los datos de tu producto en un título optimizado, bullets y una descripción persuasiva lista para publicar.",
     icon: "ShoppingBag",
+    image: "https://images.unsplash.com/photo-1472851294608-062f824d29cc",
     category: "Ventas",
     accent: "text-emerald-600 bg-emerald-50",
     output: "text",
@@ -64,6 +85,7 @@ export const BOTS: Bot[] = [
     description:
       "Pegá una reseña de Google, MercadoLibre o TripAdvisor y obtené una respuesta profesional acorde al puntaje.",
     icon: "Star",
+    image: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf",
     category: "Atención al cliente",
     accent: "text-amber-600 bg-amber-50",
     output: "text",
@@ -82,6 +104,7 @@ export const BOTS: Bot[] = [
     description:
       "Generá un email de cobranza con el tono justo según los días de atraso: desde el recordatorio amable hasta el aviso pre-legal.",
     icon: "Mail",
+    image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f",
     category: "Finanzas",
     accent: "text-rose-600 bg-rose-50",
     output: "text",
@@ -101,6 +124,7 @@ export const BOTS: Bot[] = [
     description:
       "Cargá los ítems y obtené un presupuesto formal, prolijo y listo para enviar a tu cliente en PDF.",
     icon: "FileText",
+    image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85",
     category: "Administración",
     accent: "text-indigo-600 bg-indigo-50",
     output: "pdf",
@@ -127,6 +151,7 @@ export const BOTS: Bot[] = [
     description:
       "Generá un borrador de documento legal adaptado a tu país. Ideal como base — siempre revisalo con un profesional.",
     icon: "Scale",
+    image: "https://images.unsplash.com/photo-1589829545856-b10d563a3760",
     category: "Legal",
     accent: "text-sky-600 bg-sky-50",
     output: "pdf",
@@ -159,6 +184,7 @@ export const BOTS: Bot[] = [
     description:
       "Pegá los datos de tu producto y los de la competencia y obtené un precio sugerido con justificación y margen estimado.",
     icon: "TrendingUp",
+    image: "https://images.unsplash.com/photo-1611974789855-9c53f567e8c9",
     category: "Ventas",
     accent: "text-violet-600 bg-violet-50",
     output: "text",
@@ -174,30 +200,13 @@ export const BOTS: Bot[] = [
     ],
   },
   {
-    slug: "preguntas-ml",
-    name: "Respuestas a preguntas de MercadoLibre",
-    tagline: "Contestá consultas de compradores en segundos.",
-    description:
-      "Pegá la pregunta del comprador y obtené una respuesta clara, profesional y que incentive la compra.",
-    icon: "MessageCircleQuestion",
-    category: "Atención al cliente",
-    accent: "text-teal-600 bg-teal-50",
-    output: "text",
-    cta: "Generar respuesta",
-    fields: [
-      { name: "producto", label: "¿Qué producto es?", type: "text", required: true, placeholder: "Ej: Smart Ring Yawell R09" },
-      { name: "pregunta", label: "Pregunta del comprador", type: "textarea", required: true, placeholder: "Pegá la pregunta tal cual la escribió el comprador." },
-      { name: "info_extra", label: "Información del producto que ayuda a responder", type: "textarea", placeholder: "Specs, garantía, stock, envío, compatibilidad… lo que sea relevante para esta pregunta." },
-      { name: "tono", label: "Tono", type: "select", options: ["Cercano y amigable", "Formal", "Breve y directo"] },
-    ],
-  },
-  {
     slug: "ficha-tecnica",
     name: "Ficha técnica de producto",
     tagline: "PDF prolijo con todas las specs para mandar a clientes.",
     description:
       "Pegá el link del producto o completá los datos y obtené una ficha técnica en PDF lista para compartir.",
     icon: "ClipboardList",
+    image: "https://images.unsplash.com/photo-1518770660439-4636190af475",
     category: "Ventas",
     accent: "text-orange-600 bg-orange-50",
     output: "pdf",
@@ -226,6 +235,7 @@ export const BOTS: Bot[] = [
     description:
       "Traducí descripciones de MercadoLibre, Instagram o cualquier marketplace al portugués de Brasil o inglés, adaptado al mercado local.",
     icon: "Languages",
+    image: "https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2",
     category: "Ventas",
     accent: "text-pink-600 bg-pink-50",
     output: "text",
@@ -244,6 +254,7 @@ export const BOTS: Bot[] = [
     description:
       "Listá tus productos con precios y descripciones y obtené un catálogo en PDF listo para compartir con clientes.",
     icon: "BookImage",
+    image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43",
     category: "Ventas",
     accent: "text-cyan-600 bg-cyan-50",
     output: "pdf",
