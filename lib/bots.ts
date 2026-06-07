@@ -151,7 +151,7 @@ export const BOTS: Bot[] = [
     description:
       "Generá un borrador de documento legal adaptado a tu país. Ideal como base — siempre revisalo con un profesional.",
     icon: "Scale",
-    image: "https://images.unsplash.com/photo-1589829545856-b10d563a3760",
+    image: "https://images.unsplash.com/photo-1505664194779-8beaceb93744",
     category: "Legal",
     accent: "text-sky-600 bg-sky-50",
     output: "pdf",
@@ -184,7 +184,7 @@ export const BOTS: Bot[] = [
     description:
       "Pegá los datos de tu producto y los de la competencia y obtené un precio sugerido con justificación y margen estimado.",
     icon: "TrendingUp",
-    image: "https://images.unsplash.com/photo-1611974789855-9c53f567e8c9",
+    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f",
     category: "Ventas",
     accent: "text-violet-600 bg-violet-50",
     output: "text",
