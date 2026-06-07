@@ -54,9 +54,9 @@ export function AnimatedBackground() {
           const dx = pts[i].x - pts[j].x;
           const dy = pts[i].y - pts[j].y;
           const dist = Math.hypot(dx, dy);
-          if (dist < 130) {
-            const a = (1 - dist / 130) * 0.18;
-            ctx!.strokeStyle = `rgba(99, 102, 241, ${a})`;
+          if (dist < 140) {
+            const a = (1 - dist / 140) * 0.45;
+            ctx!.strokeStyle = `rgba(165, 180, 252, ${a})`;
             ctx!.lineWidth = 1;
             ctx!.beginPath();
             ctx!.moveTo(pts[i].x, pts[i].y);
@@ -71,18 +71,18 @@ export function AnimatedBackground() {
         const dxm = p.x - mouse.x;
         const dym = p.y - mouse.y;
         const dm = Math.hypot(dxm, dym);
-        if (dm < 160) {
-          const a = (1 - dm / 160) * 0.4;
-          ctx!.strokeStyle = `rgba(147, 51, 234, ${a})`;
+        if (dm < 180) {
+          const a = (1 - dm / 180) * 0.7;
+          ctx!.strokeStyle = `rgba(216, 180, 254, ${a})`;
           ctx!.lineWidth = 1;
           ctx!.beginPath();
           ctx!.moveTo(p.x, p.y);
           ctx!.lineTo(mouse.x, mouse.y);
           ctx!.stroke();
         }
-        ctx!.fillStyle = "rgba(79, 70, 229, 0.5)";
+        ctx!.fillStyle = "rgba(199, 210, 254, 0.85)";
         ctx!.beginPath();
-        ctx!.arc(p.x, p.y, 1.6, 0, Math.PI * 2);
+        ctx!.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
         ctx!.fill();
       }
 

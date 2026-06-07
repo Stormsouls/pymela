@@ -48,11 +48,11 @@ export function BotCard({ bot, index = 0 }: { bot: Bot; index?: number }) {
           src={`${bot.image}?auto=format&fit=crop&w=700&q=75`}
           alt={bot.name}
           loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+          className="h-full w-full object-cover blur-[2px] brightness-[.92] transition-all duration-700 ease-out group-hover:scale-110 group-hover:blur-0 group-hover:brightness-100"
         />
         {/* Degradé suave hacia el blanco del body — sin corte crudo */}
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white via-white/70 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/10" />
+        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-white via-white/80 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/10" />
         <span className="glass absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold text-zinc-700 shadow-sm">
           {bot.category}
         </span>

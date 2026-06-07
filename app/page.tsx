@@ -7,29 +7,31 @@ import { AnimatedBackground } from "@/components/AnimatedBackground";
 export default function Home() {
   return (
     <main className="min-h-screen overflow-hidden bg-zinc-50">
-      {/* Hero */}
-      <section className="relative">
-        {/* Animated background: blobs + constelación tecnológica */}
-        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-indigo-300/40 blur-3xl animate-blob" />
-          <div className="absolute right-0 top-10 h-96 w-96 rounded-full bg-purple-300/40 blur-3xl animate-blob delay-200" />
-          <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-pink-300/30 blur-3xl animate-blob delay-500" />
+      {/* Hero — oscuro, tecnológico, con constelación animada */}
+      <section className="relative overflow-hidden bg-slate-950">
+        {/* Capa de fondo animado */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900" />
+          <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-indigo-600/30 blur-3xl animate-blob" />
+          <div className="absolute right-0 top-10 h-96 w-96 rounded-full bg-purple-600/30 blur-3xl animate-blob delay-200" />
+          <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-fuchsia-600/20 blur-3xl animate-blob delay-500" />
           <AnimatedBackground />
-          <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/40 to-zinc-50" />
+          {/* Funde el hero oscuro hacia el zinc-50 de las cards */}
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-zinc-50" />
         </div>
 
-        <div className="mx-auto max-w-5xl px-5 pt-24 pb-20 text-center sm:pt-32">
-          <span className="animate-fade-up glass inline-flex items-center gap-1.5 rounded-full border border-white/60 px-4 py-1.5 text-sm font-medium text-zinc-700 shadow-sm">
-            <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
+        <div className="relative mx-auto max-w-5xl px-5 pt-24 pb-28 text-center sm:pt-32">
+          <span className="animate-fade-up inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-medium text-indigo-100 shadow-sm backdrop-blur-sm">
+            <Sparkles className="h-3.5 w-3.5 text-indigo-300" />
             Herramientas de IA para tu negocio
           </span>
 
-          <h1 className="animate-fade-up delay-100 mx-auto mt-7 max-w-3xl text-4xl font-bold tracking-tight text-zinc-900 sm:text-6xl">
+          <h1 className="animate-fade-up delay-100 mx-auto mt-7 max-w-3xl text-4xl font-bold tracking-tight text-white sm:text-6xl">
             Las tareas de tu PyME,{" "}
             <span className="gradient-text">resueltas en segundos</span>.
           </h1>
 
-          <p className="animate-fade-up delay-200 mx-auto mt-6 max-w-xl text-lg leading-relaxed text-zinc-500">
+          <p className="animate-fade-up delay-200 mx-auto mt-6 max-w-xl text-lg leading-relaxed text-slate-300">
             Respuestas en MercadoLibre, presupuestos, descripciones, cobranzas y documentos
             legales. Completás un formulario, listo. Sin saber nada de IA.
           </p>
@@ -37,27 +39,27 @@ export default function Home() {
           <div className="animate-fade-up delay-300 mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
               href="/conectar-ml"
-              className="animate-pulse-ring group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-3 font-semibold text-white shadow-lg shadow-indigo-500/30 transition-transform hover:scale-105"
+              className="animate-pulse-ring group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-3 font-semibold text-white shadow-lg shadow-indigo-500/40 transition-transform hover:scale-105"
             >
               <Zap className="h-4 w-4" /> Auto-responder MercadoLibre
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             <a
               href="#herramientas"
-              className="inline-flex items-center gap-2 rounded-full border border-zinc-300 bg-white px-6 py-3 font-semibold text-zinc-700 transition-colors hover:bg-zinc-50"
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3 font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/10"
             >
               Ver todas las herramientas
             </a>
           </div>
 
-          <div className="animate-fade-up delay-500 mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-zinc-500">
+          <div className="animate-fade-up delay-500 mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-slate-400">
             <span className="inline-flex items-center gap-1.5">
-              <Zap className="h-4 w-4 text-indigo-500" /> Sin instalar nada
+              <Zap className="h-4 w-4 text-indigo-400" /> Sin instalar nada
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <ShieldCheck className="h-4 w-4 text-indigo-500" /> Pensado para LatAm
+              <ShieldCheck className="h-4 w-4 text-indigo-400" /> Pensado para LatAm
             </span>
-            <Link href="/historial" className="inline-flex items-center gap-1.5 text-indigo-600 hover:underline">
+            <Link href="/historial" className="inline-flex items-center gap-1.5 text-indigo-300 hover:text-indigo-200 hover:underline">
               <BookMarked className="h-4 w-4" /> Guardá tu historial →
             </Link>
           </div>
