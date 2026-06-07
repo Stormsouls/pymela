@@ -2,17 +2,19 @@ import { Sparkles, Zap, ShieldCheck, BookMarked, ArrowRight } from "lucide-react
 import Link from "next/link";
 import { BOTS } from "@/lib/bots";
 import { BotCard } from "@/components/BotCard";
+import { AnimatedBackground } from "@/components/AnimatedBackground";
 
 export default function Home() {
   return (
     <main className="min-h-screen overflow-hidden bg-zinc-50">
       {/* Hero */}
       <section className="relative">
-        {/* Animated background blobs */}
+        {/* Animated background: blobs + constelación tecnológica */}
         <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
           <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-indigo-300/40 blur-3xl animate-blob" />
           <div className="absolute right-0 top-10 h-96 w-96 rounded-full bg-purple-300/40 blur-3xl animate-blob delay-200" />
           <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-pink-300/30 blur-3xl animate-blob delay-500" />
+          <AnimatedBackground />
           <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/40 to-zinc-50" />
         </div>
 

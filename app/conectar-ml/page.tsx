@@ -333,7 +333,7 @@ export default function ConectarMLPage() {
               </div>
               <a href="/api/ml/auth"
                 className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 font-semibold text-zinc-900 transition-colors hover:bg-yellow-300">
-                ⚡ Conectar con MercadoLibre
+                <Zap className="h-4 w-4" /> Conectar con MercadoLibre
               </a>
             </div>
             <div className="text-sm text-zinc-400 space-y-1.5">

@@ -50,7 +50,9 @@ export function BotCard({ bot, index = 0 }: { bot: Bot; index?: number }) {
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
+        {/* Degradé suave hacia el blanco del body — sin corte crudo */}
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white via-white/70 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/10" />
         <span className="glass absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold text-zinc-700 shadow-sm">
           {bot.category}
         </span>
@@ -60,11 +62,12 @@ export function BotCard({ bot, index = 0 }: { bot: Bot; index?: number }) {
       <div className="relative z-10 flex flex-1 flex-col px-5 pb-5 pt-0">
         <span
           className={cn(
-            "lift-z -mt-6 flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg ring-4 ring-white transition-transform duration-300 group-hover:scale-110",
+            "lift-z -mt-7 flex items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg ring-4 ring-white transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3",
             bot.accent
           )}
+          style={{ height: "3.25rem", width: "3.25rem" }}
         >
-          <BotIcon name={bot.icon} className="h-6 w-6" strokeWidth={1.75} />
+          <BotIcon name={bot.icon} className="h-6 w-6 drop-shadow" strokeWidth={2} />
         </span>
 
         <h3 className="lift-z-sm mt-3 font-semibold leading-snug text-zinc-900">{bot.name}</h3>

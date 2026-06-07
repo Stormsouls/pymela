@@ -38,9 +38,9 @@ export const BOTS: Bot[] = [
     description:
       "Pegá la pregunta del comprador y obtené una respuesta clara, profesional y que incentive la compra.",
     icon: "MessageCircleQuestion",
-    image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d",
+    image: "https://images.unsplash.com/photo-1577563908411-5077b6dc7624",
     category: "Atención al cliente",
-    accent: "text-teal-600 bg-teal-50",
+    accent: "from-teal-400 to-emerald-500",
     output: "text",
     cta: "Generar respuesta",
     fields: [
@@ -59,7 +59,7 @@ export const BOTS: Bot[] = [
     icon: "ShoppingBag",
     image: "https://images.unsplash.com/photo-1472851294608-062f824d29cc",
     category: "Ventas",
-    accent: "text-emerald-600 bg-emerald-50",
+    accent: "from-emerald-400 to-green-500",
     output: "text",
     cta: "Generar descripción",
     scrapeUrl: true,
@@ -85,9 +85,9 @@ export const BOTS: Bot[] = [
     description:
       "Pegá una reseña de Google, MercadoLibre o TripAdvisor y obtené una respuesta profesional acorde al puntaje.",
     icon: "Star",
-    image: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf",
+    image: "https://images.unsplash.com/photo-1633613286991-611fe299c4be",
     category: "Atención al cliente",
-    accent: "text-amber-600 bg-amber-50",
+    accent: "from-amber-400 to-orange-500",
     output: "text",
     cta: "Generar respuesta",
     fields: [
@@ -106,7 +106,7 @@ export const BOTS: Bot[] = [
     icon: "Mail",
     image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f",
     category: "Finanzas",
-    accent: "text-rose-600 bg-rose-50",
+    accent: "from-rose-400 to-red-500",
     output: "text",
     cta: "Generar email",
     fields: [
@@ -126,7 +126,7 @@ export const BOTS: Bot[] = [
     icon: "FileText",
     image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85",
     category: "Administración",
-    accent: "text-indigo-600 bg-indigo-50",
+    accent: "from-indigo-400 to-blue-500",
     output: "pdf",
     cta: "Generar presupuesto",
     fields: [
@@ -153,7 +153,7 @@ export const BOTS: Bot[] = [
     icon: "Scale",
     image: "https://images.unsplash.com/photo-1505664194779-8beaceb93744",
     category: "Legal",
-    accent: "text-sky-600 bg-sky-50",
+    accent: "from-sky-400 to-cyan-500",
     output: "pdf",
     cta: "Generar documento",
     fields: [
@@ -186,7 +186,7 @@ export const BOTS: Bot[] = [
     icon: "TrendingUp",
     image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f",
     category: "Ventas",
-    accent: "text-violet-600 bg-violet-50",
+    accent: "from-violet-400 to-purple-500",
     output: "text",
     cta: "Optimizar precio",
     scrapeUrl: true,
@@ -208,7 +208,7 @@ export const BOTS: Bot[] = [
     icon: "ClipboardList",
     image: "https://images.unsplash.com/photo-1518770660439-4636190af475",
     category: "Ventas",
-    accent: "text-orange-600 bg-orange-50",
+    accent: "from-orange-400 to-amber-500",
     output: "pdf",
     cta: "Generar ficha técnica",
     scrapeUrl: true,
@@ -235,9 +235,9 @@ export const BOTS: Bot[] = [
     description:
       "Traducí descripciones de MercadoLibre, Instagram o cualquier marketplace al portugués de Brasil o inglés, adaptado al mercado local.",
     icon: "Languages",
-    image: "https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2",
+    image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa",
     category: "Ventas",
-    accent: "text-pink-600 bg-pink-50",
+    accent: "from-pink-400 to-rose-500",
     output: "text",
     cta: "Traducir publicación",
     fields: [
@@ -254,9 +254,9 @@ export const BOTS: Bot[] = [
     description:
       "Listá tus productos con precios y descripciones y obtené un catálogo en PDF listo para compartir con clientes.",
     icon: "BookImage",
-    image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43",
+    image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8",
     category: "Ventas",
-    accent: "text-cyan-600 bg-cyan-50",
+    accent: "from-cyan-400 to-teal-500",
     output: "pdf",
     cta: "Generar catálogo",
     fields: [
