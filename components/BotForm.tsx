@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Copy, Check, Download, FileDown, Loader2, Sparkles, RefreshCw, Link2, ScanSearch, ImageDown, Images } from "lucide-react";
+import { ArrowLeft, Copy, Check, Download, FileDown, Loader2, Sparkles, RefreshCw, Link2, ScanSearch, ImageDown, Images, Zap } from "lucide-react";
 import type { Bot } from "@/lib/bots";
 import { BotIcon } from "./BotIcon";
 import { cn } from "@/lib/utils";
@@ -200,6 +200,19 @@ export function BotForm({ bot }: { bot: Bot }) {
           <p className="mt-1 text-zinc-500">{bot.description}</p>
         </div>
       </div>
+
+      {bot.slug === "preguntas-ml" && !result && (
+        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+          <Zap className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+          <div className="text-sm">
+            <span className="font-medium text-emerald-800">¿Vendés mucho en MercadoLibre? </span>
+            <span className="text-emerald-700">Esta misma IA puede responder automáticamente todas tus preguntas, en segundos, sin que tengas que pegar nada.</span>
+            <Link href="/conectar-ml" className="ml-1 font-medium text-emerald-800 underline underline-offset-2 hover:text-emerald-900">
+              Conectá tu cuenta →
+            </Link>
+          </div>
+        </div>
+      )}
 
       {!result && bot.scrapeUrl && (
         <div className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
