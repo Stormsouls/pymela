@@ -8,11 +8,11 @@ export default function Home() {
   return (
     <main className="min-h-screen overflow-hidden bg-zinc-50">
       {/* Hero — oscuro, tecnológico, con constelación animada */}
-      <section className="relative min-h-[160vh] overflow-clip bg-slate-950">
-        {/* Fondo animado fijado (sticky) — se mantiene mientras scrolleás = parallax notorio */}
+      <section className="relative overflow-hidden bg-slate-950">
+        {/* Fondo animado con parallax + formas flotantes */}
         <HeroBackground />
 
-        <div className="relative z-10 -mt-[100vh] mx-auto max-w-5xl px-5 pt-24 pb-28 text-center sm:pt-32">
+        <div className="relative z-10 mx-auto max-w-5xl px-5 pt-24 pb-28 text-center sm:pt-32">
           <span className="animate-fade-up inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-medium text-indigo-100 shadow-sm backdrop-blur-sm">
             <Sparkles className="h-3.5 w-3.5 text-indigo-300" />
             Herramientas de IA para tu negocio

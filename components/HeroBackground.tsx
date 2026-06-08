@@ -52,7 +52,7 @@ export function HeroBackground() {
   }, []);
 
   return (
-    <div ref={root} className="sticky top-0 h-screen w-full overflow-hidden">
+    <div ref={root} className="absolute inset-0 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900" />
 
       {/* Blobs con parallax (depth alto = se mueven más) */}
