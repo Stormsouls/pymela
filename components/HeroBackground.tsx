@@ -19,9 +19,9 @@ export function HeroBackground() {
       el.querySelectorAll<HTMLElement>("[data-depth]").forEach((node) => {
         const d = parseFloat(node.dataset.depth || "0");
         const rot = node.dataset.rot || "0deg";
-        const tx = mx * d * 40;
-        // scroll parallax notorio + funciona en mobile (no depende del mouse)
-        const ty = my * d * 40 - sy * d * 0.18;
+        const tx = mx * d * 60;
+        // scroll parallax MUY agresivo + funciona en mobile (no depende del mouse)
+        const ty = my * d * 60 - sy * d * 0.55;
         node.style.transform = `translate3d(${tx}px, ${ty}px, 0) rotate(${rot})`;
       });
       raf = 0;
