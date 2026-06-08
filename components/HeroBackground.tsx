@@ -18,9 +18,11 @@ export function HeroBackground() {
       if (!el) return;
       el.querySelectorAll<HTMLElement>("[data-depth]").forEach((node) => {
         const d = parseFloat(node.dataset.depth || "0");
+        const rot = node.dataset.rot || "0deg";
         const tx = mx * d * 40;
-        const ty = my * d * 40 + sy * d * 0.4;
-        node.style.transform = `translate3d(${tx}px, ${ty}px, 0)`;
+        // scroll parallax notorio + funciona en mobile (no depende del mouse)
+        const ty = my * d * 40 - sy * d * 0.18;
+        node.style.transform = `translate3d(${tx}px, ${ty}px, 0) rotate(${rot})`;
       });
       raf = 0;
     }
@@ -40,6 +42,8 @@ export function HeroBackground() {
 
     window.addEventListener("mousemove", onMove);
     window.addEventListener("scroll", onScroll, { passive: true });
+    sy = window.scrollY;
+    schedule();
     return () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("scroll", onScroll);
@@ -60,7 +64,7 @@ export function HeroBackground() {
       <AnimatedBackground />
 
       {/* Formas flotantes decorativas (parallax + float) */}
-      <div data-depth="2.2" className="absolute left-[12%] top-[22%] h-16 w-16 rounded-2xl border border-indigo-400/30 animate-float" style={{ transform: "rotate(12deg)" }} />
+      <div data-depth="2.2" data-rot="12deg" className="absolute left-[12%] top-[22%] h-16 w-16 rounded-2xl border border-indigo-400/30 animate-float" style={{ transform: "rotate(12deg)" }} />
       <div data-depth="1.8" className="absolute right-[14%] top-[30%] h-10 w-10 rounded-full border-2 border-fuchsia-400/30 animate-float delay-300" />
       <div data-depth="2.6" className="absolute right-[24%] bottom-[26%] h-6 w-6 rounded-full bg-purple-400/40 animate-float delay-200" />
       <div data-depth="1.5" className="absolute left-[20%] bottom-[20%] h-3 w-3 rounded-full bg-indigo-300/60 animate-float" />
