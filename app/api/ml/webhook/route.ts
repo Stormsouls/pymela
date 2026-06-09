@@ -42,6 +42,17 @@ async function processQuestion(questionId: string, mlUserId: string) {
   const question = await getQuestion(questionId, token);
   if (question.status !== "UNANSWERED" || question.answer) return;
 
+  // Verificar si esta publicación tiene el bot desactivado
+  const db = getSupabaseServer();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: itemSetting } = await (db.from("ml_item_settings") as any)
+    .select("active, custom_playbook")
+    .eq("ml_user_id", mlUserId)
+    .eq("item_id", question.item_id)
+    .maybeSingle();
+
+  if (itemSetting && !itemSetting.active) return;
+
   // Contexto del producto
   let itemTitle = question.item_id;
   let productContext = `Producto (ID: ${question.item_id})`;
@@ -88,7 +99,6 @@ async function processQuestion(questionId: string, mlUserId: string) {
 
   if (reviewMode) {
     // Guardar como borrador para que el vendedor revise
-    const db = getSupabaseServer();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (db.from("ml_drafts") as any).insert({
       ml_conn_id: conn.id,

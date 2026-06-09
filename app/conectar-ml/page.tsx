@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, CheckCircle, AlertCircle, Loader2, Zap, Power,
-  Check, X, Edit2, Clock, BookOpen, Eye,
+  Check, X, Edit2, Clock, BookOpen, Eye, ChevronDown, ChevronUp, ToggleLeft, ToggleRight,
 } from "lucide-react";
 
 type MlConn = {
@@ -26,6 +26,15 @@ type Draft = {
   created_at: string;
 };
 
+type MlItem = {
+  id: string;
+  title: string;
+  thumbnail: string;
+  price: number;
+  active: boolean;
+  custom_playbook: string;
+};
+
 export default function ConectarMLPage() {
   const [conn, setConn] = useState<MlConn | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,6 +46,14 @@ export default function ConectarMLPage() {
   const [editingDraft, setEditingDraft] = useState<{ id: string; text: string } | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  // Publicaciones
+  const [items, setItems] = useState<MlItem[]>([]);
+  const [loadingItems, setLoadingItems] = useState(false);
+  const [expandedItem, setExpandedItem] = useState<string | null>(null);
+  const [itemPlaybooks, setItemPlaybooks] = useState<Record<string, string>>({});
+  const [savingItem, setSavingItem] = useState<string | null>(null);
+  const [savedItem, setSavedItem] = useState<string | null>(null);
+
   const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const error = urlParams?.get("error");
   const success = urlParams?.get("success");
@@ -44,6 +61,21 @@ export default function ConectarMLPage() {
   const loadDrafts = useCallback(async (mlUserId: string) => {
     const res = await fetch(`/api/ml/drafts?ml_uid=${mlUserId}`);
     if (res.ok) setDrafts(await res.json());
+  }, []);
+
+  const loadItems = useCallback(async () => {
+    setLoadingItems(true);
+    try {
+      const res = await fetch("/api/ml/items");
+      if (res.ok) {
+        const data: MlItem[] = await res.json();
+        setItems(data);
+        const pb: Record<string, string> = {};
+        for (const item of data) pb[item.id] = item.custom_playbook ?? "";
+        setItemPlaybooks(pb);
+      }
+    } catch { /* ignorar */ }
+    setLoadingItems(false);
   }, []);
 
   useEffect(() => {
@@ -54,13 +86,13 @@ export default function ConectarMLPage() {
         if (data) {
           setConn(data);
           setPlaybook(data.playbook ?? "");
-          await loadDrafts(data.ml_user_id);
+          await Promise.all([loadDrafts(data.ml_user_id), loadItems()]);
         }
       }
       setLoading(false);
     }
     load();
-  }, [loadDrafts]);
+  }, [loadDrafts, loadItems]);
 
   async function toggle(field: "auto_respond" | "review_mode") {
     if (!conn) return;
@@ -87,6 +119,30 @@ export default function ConectarMLPage() {
     setSavingPlaybook(false);
     setPlaybookSaved(true);
     setTimeout(() => setPlaybookSaved(false), 2500);
+  }
+
+  async function toggleItem(item: MlItem) {
+    const newActive = !item.active;
+    setItems((prev) => prev.map((i) => i.id === item.id ? { ...i, active: newActive } : i));
+    await fetch("/api/ml/item-settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ item_id: item.id, active: newActive, title: item.title, thumbnail: item.thumbnail }),
+    });
+  }
+
+  async function saveItemPlaybook(item: MlItem) {
+    setSavingItem(item.id);
+    const text = itemPlaybooks[item.id] ?? "";
+    await fetch("/api/ml/item-settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ item_id: item.id, custom_playbook: text, title: item.title, thumbnail: item.thumbnail }),
+    });
+    setItems((prev) => prev.map((i) => i.id === item.id ? { ...i, custom_playbook: text } : i));
+    setSavingItem(null);
+    setSavedItem(item.id);
+    setTimeout(() => setSavedItem(null), 2000);
   }
 
   async function draftAction(draftId: string, action: "approve" | "reject" | "edit", editedText?: string) {
@@ -164,7 +220,7 @@ export default function ConectarMLPage() {
               </div>
             </div>
 
-            {/* Toggles */}
+            {/* Toggles globales */}
             <div className="rounded-2xl border border-zinc-200 bg-white divide-y divide-zinc-100">
               {([
                 {
@@ -197,23 +253,23 @@ export default function ConectarMLPage() {
               ))}
             </div>
 
-            {/* Playbook */}
+            {/* Instrucciones globales */}
             <div className="rounded-2xl border border-zinc-200 bg-white p-5">
               <div className="flex items-center gap-2 mb-3">
                 <BookOpen className="h-4 w-4 text-zinc-400" />
-                <h3 className="font-medium text-zinc-900">Instrucciones para la IA</h3>
+                <h3 className="font-medium text-zinc-900">Instrucciones generales para la IA</h3>
               </div>
               <p className="mb-1 text-sm text-zinc-500">
-                La IA ya lee automáticamente el título, descripción, precio y garantía de cada publicación. Acá agregás todo lo demás: políticas de envío, tono, preguntas frecuentes, frases a usar o evitar.
+                Aplican a <strong className="text-zinc-700">todas tus publicaciones</strong>: políticas de envío, tono, garantía, frases a usar o evitar.
               </p>
               <p className="mb-3 text-xs text-zinc-400">
-                Estas instrucciones aplican a <strong className="text-zinc-500">todas tus publicaciones</strong>. Si tenés reglas específicas por producto, indicalo explícitamente (ej: "Para el producto X, decir que...").
+                Podés agregar instrucciones específicas por publicación más abajo.
               </p>
               <textarea
                 value={playbook}
                 onChange={(e) => setPlaybook(e.target.value)}
-                rows={6}
-                placeholder={`Ejemplos:\n• Enviamos a todo el país en 3-5 días hábiles por Mercado Envíos.\n• Garantía de 12 meses contra defectos de fábrica.\n• Aceptamos devoluciones en los primeros 30 días sin uso.\n• Siempre terminar con "Cualquier consulta, estamos disponibles 👍"\n• Si preguntan por precio mayorista, decir que lo hablamos por privado.`}
+                rows={5}
+                placeholder={`Ejemplos:\n• Enviamos a todo el país en 3-5 días hábiles por Mercado Envíos.\n• Garantía de 12 meses contra defectos de fábrica.\n• Siempre terminar con "Cualquier consulta, estamos disponibles 👍"`}
                 className="w-full resize-y rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
               />
               <div className="mt-3 flex items-center gap-3">
@@ -223,7 +279,7 @@ export default function ConectarMLPage() {
                   className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
                 >
                   {savingPlaybook && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                  Guardar instrucciones
+                  Guardar instrucciones generales
                 </button>
                 {playbookSaved && (
                   <span className="flex items-center gap-1 text-sm text-emerald-600">
@@ -231,6 +287,114 @@ export default function ConectarMLPage() {
                   </span>
                 )}
               </div>
+            </div>
+
+            {/* Publicaciones */}
+            <div className="rounded-2xl border border-zinc-200 bg-white p-5">
+              <div className="flex items-center gap-2 mb-1">
+                <Zap className="h-4 w-4 text-zinc-400" />
+                <h3 className="font-medium text-zinc-900">Tus publicaciones</h3>
+              </div>
+              <p className="text-sm text-zinc-500 mb-4">
+                Por defecto respondemos en todas. Desactivá las que no querés, o agregá instrucciones específicas por producto.
+              </p>
+
+              {loadingItems ? (
+                <div className="flex items-center gap-2 text-sm text-zinc-400 py-4">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Cargando publicaciones…
+                </div>
+              ) : items.length === 0 ? (
+                <p className="text-sm text-zinc-400 py-2">No encontramos publicaciones activas.</p>
+              ) : (
+                <div className="space-y-2">
+                  {items.map((item) => (
+                    <div
+                      key={item.id}
+                      className={`rounded-xl border transition-colors ${item.active ? "border-zinc-200 bg-zinc-50" : "border-zinc-100 bg-white opacity-60"}`}
+                    >
+                      {/* Fila principal */}
+                      <div className="flex items-center gap-3 px-4 py-3">
+                        {item.thumbnail && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={item.thumbnail}
+                            alt={item.title}
+                            className="h-10 w-10 rounded-lg object-cover shrink-0 border border-zinc-200"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-zinc-800 truncate">{item.title}</p>
+                          <p className="text-xs text-zinc-400 mt-0.5">
+                            {item.active ? (
+                              <span className="text-emerald-600">Bot activo</span>
+                            ) : (
+                              <span className="text-zinc-400">Bot desactivado</span>
+                            )}
+                            {item.custom_playbook && item.active && (
+                              <span className="ml-2 text-indigo-500">· instrucciones propias</span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {/* Toggle activo/inactivo */}
+                          <button
+                            onClick={() => toggleItem(item)}
+                            title={item.active ? "Desactivar bot en esta publicación" : "Activar bot en esta publicación"}
+                            className="text-zinc-400 hover:text-zinc-700 transition-colors"
+                          >
+                            {item.active
+                              ? <ToggleRight className="h-6 w-6 text-emerald-500" />
+                              : <ToggleLeft className="h-6 w-6 text-zinc-300" />
+                            }
+                          </button>
+                          {/* Expandir instrucciones específicas */}
+                          <button
+                            onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)}
+                            className="text-zinc-400 hover:text-zinc-700 transition-colors"
+                            title="Instrucciones específicas"
+                          >
+                            {expandedItem === item.id
+                              ? <ChevronUp className="h-4 w-4" />
+                              : <ChevronDown className="h-4 w-4" />
+                            }
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Panel expandible: instrucciones específicas */}
+                      {expandedItem === item.id && (
+                        <div className="border-t border-zinc-200 px-4 pb-4 pt-3">
+                          <p className="text-xs text-zinc-500 mb-2">
+                            Instrucciones solo para esta publicación. Se suman a las generales.
+                          </p>
+                          <textarea
+                            value={itemPlaybooks[item.id] ?? ""}
+                            onChange={(e) => setItemPlaybooks((p) => ({ ...p, [item.id]: e.target.value }))}
+                            rows={3}
+                            placeholder="Ej: Este producto no incluye cargador. Compatible solo con Android 10+."
+                            className="w-full resize-none rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                          />
+                          <div className="mt-2 flex items-center gap-3">
+                            <button
+                              onClick={() => saveItemPlaybook(item)}
+                              disabled={savingItem === item.id}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+                            >
+                              {savingItem === item.id && <Loader2 className="h-3 w-3 animate-spin" />}
+                              Guardar
+                            </button>
+                            {savedItem === item.id && (
+                              <span className="flex items-center gap-1 text-xs text-emerald-600">
+                                <Check className="h-3 w-3" /> Guardado
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Borradores */}
@@ -305,12 +469,11 @@ export default function ConectarMLPage() {
             <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-5 text-sm text-zinc-500">
               <p className="font-medium text-zinc-700 mb-2">¿Cómo funciona?</p>
               <ul className="space-y-1.5">
-                <li>✓ Un comprador hace una pregunta en cualquiera de tus publicaciones</li>
+                <li>✓ Un comprador hace una pregunta en cualquiera de tus publicaciones activas</li>
                 <li>✓ MercadoLibre avisa a Pymela en tiempo real</li>
-                <li>✓ La IA lee los datos del producto (título, descripción, precio) + tus instrucciones y genera la respuesta</li>
+                <li>✓ La IA lee los datos del producto + tus instrucciones y genera la respuesta</li>
                 <li>✓ {conn.review_mode ? "La respuesta queda como borrador — volvé a esta página para revisarla y publicarla" : "La respuesta se publica directamente en la pregunta, en segundos"}</li>
               </ul>
-              <p className="mt-3 text-xs text-zinc-400">Funciona con todas tus publicaciones activas, sin configurar nada por producto.</p>
             </div>
 
             <button onClick={disconnect} className="text-sm text-zinc-400 hover:text-rose-600">
