@@ -7,7 +7,7 @@ import type { Bot } from "@/lib/bots";
 import { BotIcon } from "./BotIcon";
 import { cn } from "@/lib/utils";
 
-export function BotCard({ bot, index = 0 }: { bot: Bot; index?: number }) {
+export function BotCard({ bot, index = 0, href: hrefOverride }: { bot: Bot; index?: number; href?: string }) {
   const ref = useRef<HTMLAnchorElement>(null);
 
   function handleMove(e: React.MouseEvent<HTMLAnchorElement>) {
@@ -33,7 +33,7 @@ export function BotCard({ bot, index = 0 }: { bot: Bot; index?: number }) {
   return (
     <Link
       ref={ref}
-      href={`/${bot.slug}`}
+      href={hrefOverride ?? `/${bot.slug}`}
       onMouseMove={handleMove}
       onMouseLeave={handleLeave}
       style={{ animationDelay: `${index * 70}ms` }}

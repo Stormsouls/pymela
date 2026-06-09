@@ -32,25 +32,6 @@ export type Bot = {
 
 export const BOTS: Bot[] = [
   {
-    slug: "preguntas-ml",
-    name: "Respuestas a preguntas de MercadoLibre",
-    tagline: "Contestá consultas de compradores en segundos.",
-    description:
-      "Pegá la pregunta del comprador y obtené una respuesta clara, profesional y que incentive la compra.",
-    icon: "MessageCircleQuestion",
-    image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f",
-    category: "Atención al cliente",
-    accent: "from-teal-400 to-emerald-500",
-    output: "text",
-    cta: "Generar respuesta",
-    fields: [
-      { name: "producto", label: "¿Qué producto es?", type: "text", required: true, placeholder: "Ej: Smart Ring Yawell R09" },
-      { name: "pregunta", label: "Pregunta del comprador", type: "textarea", required: true, placeholder: "Pegá la pregunta tal cual la escribió el comprador." },
-      { name: "info_extra", label: "Información del producto que ayuda a responder", type: "textarea", placeholder: "Specs, garantía, stock, envío, compatibilidad… lo que sea relevante para esta pregunta." },
-      { name: "tono", label: "Tono", type: "select", options: ["Cercano y amigable", "Formal", "Breve y directo"] },
-    ],
-  },
-  {
     slug: "descripciones",
     name: "Descripciones para MercadoLibre",
     tagline: "Título SEO + descripción que vende, en segundos.",

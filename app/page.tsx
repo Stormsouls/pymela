@@ -61,8 +61,25 @@ export default function Home() {
       {/* Grilla de bots */}
       <section id="herramientas" className="mx-auto max-w-6xl px-5 pb-24">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <BotCard
+            href="/conectar-ml"
+            index={0}
+            bot={{
+              slug: "conectar-ml",
+              name: "Respuestas automáticas en MercadoLibre",
+              tagline: "Conectá tu cuenta y la IA responde las preguntas de tus compradores en segundos, sin que hagas nada.",
+              description: "",
+              icon: "Zap",
+              image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f",
+              category: "Automático",
+              accent: "from-teal-400 to-emerald-500",
+              output: "text",
+              cta: "Conectar cuenta",
+              fields: [],
+            }}
+          />
           {BOTS.map((bot, i) => (
-            <BotCard key={bot.slug} bot={bot} index={i} />
+            <BotCard key={bot.slug} bot={bot} index={i + 1} />
           ))}
         </div>
       </section>
