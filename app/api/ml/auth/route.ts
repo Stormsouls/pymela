@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { buildAuthUrl } from "@/lib/ml-api";
 import { getSupabaseServer } from "@/lib/supabase-server";
 
@@ -21,8 +22,17 @@ export async function GET(req: NextRequest) {
     } catch { /* ignorar */ }
   }
 
-  // Codificar state como base64 para pasar el user_id al callback
-  const state = Buffer.from(JSON.stringify({ userId, ts: Date.now() })).toString("base64url");
-  const url = buildAuthUrl(state);
-  return NextResponse.redirect(url);
+  // Nonce anti-CSRF: se guarda en cookie y se valida en el callback, para que
+  // un atacante no pueda forzar un flujo OAuth con un state que él controla.
+  const nonce = randomUUID();
+  const state = Buffer.from(JSON.stringify({ userId, ts: Date.now(), nonce })).toString("base64url");
+  const res = NextResponse.redirect(buildAuthUrl(state));
+  res.cookies.set("ml_oauth_state", nonce, {
+    path: "/",
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    maxAge: 600, // 10 minutos para completar el login
+  });
+  return res;
 }

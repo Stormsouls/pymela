@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
+const MAX_TEXT = 60_000; // ~20 páginas; evita PDFs gigantes que agoten CPU/memoria.
+
 // Convierte texto plano en un PDF A4 simple, prolijo y con saltos de página.
 export async function POST(req: NextRequest) {
+  if (!(await rateLimit(getClientIp(req), "pdf", 20, 60))) {
+    return NextResponse.json({ error: "Demasiadas solicitudes. Esperá un minuto." }, { status: 429 });
+  }
+
   let body: { title?: string; text?: string };
   try {
     body = await req.json();
@@ -13,7 +20,7 @@ export async function POST(req: NextRequest) {
   }
 
   const title = (body.title ?? "Documento").slice(0, 120);
-  const text = body.text ?? "";
+  const text = (body.text ?? "").slice(0, MAX_TEXT);
   if (!text.trim()) {
     return NextResponse.json({ error: "Sin contenido" }, { status: 400 });
   }

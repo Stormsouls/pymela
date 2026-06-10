@@ -1,5 +1,7 @@
 // Edge runtime: hasta 30s de timeout (vs 10s de serverless en Vercel Hobby).
 // Proxy a Jina Reader: evita CORS del browser y el límite de serverless.
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+
 export const runtime = "edge";
 
 // Extrae URLs de imágenes del contenido markdown de Jina.
@@ -55,11 +57,24 @@ function isProductImage(url: string): boolean {
 }
 
 export async function GET(req: Request) {
+  if (!(await rateLimit(getClientIp(req), "jina", 15, 60))) {
+    return Response.json({ error: "Demasiadas solicitudes. Esperá un minuto." }, { status: 429 });
+  }
+
   const { searchParams } = new URL(req.url);
   const url = searchParams.get("url");
 
   if (!url) {
     return Response.json({ error: "Falta el parámetro url" }, { status: 400 });
+  }
+
+  // Solo permitir http/https públicos (evita abusar el proxy con esquemas raros).
+  let parsed: URL;
+  try { parsed = new URL(url); } catch {
+    return Response.json({ error: "URL inválida" }, { status: 400 });
+  }
+  if (!["http:", "https:"].includes(parsed.protocol)) {
+    return Response.json({ error: "Protocolo no permitido" }, { status: 400 });
   }
 
   try {

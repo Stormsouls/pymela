@@ -20,6 +20,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Faltan datos" }, { status: 400 });
   }
 
+  // Cota de tamaño de entrada: evita prompts gigantes que disparen el costo de IA.
+  if (JSON.stringify(values).length > 20_000) {
+    return NextResponse.json({ error: "El contenido es demasiado largo." }, { status: 413 });
+  }
+
   const bot = getBot(slug);
   if (!bot) {
     return NextResponse.json({ error: "Bot inexistente" }, { status: 404 });
