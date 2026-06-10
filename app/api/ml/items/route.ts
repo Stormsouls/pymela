@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase-server";
 import { getConnectionByMlUserId, getFreshToken, mlFetch } from "@/lib/ml-api";
+import { getVerifiedMlUid } from "@/lib/ml-session";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-  const mlUid = req.cookies.get("pymela_ml_uid")?.value;
+  const mlUid = getVerifiedMlUid(req);
   if (!mlUid) return NextResponse.json({ error: "No identificado" }, { status: 401 });
+
+  // Endpoint costoso (múltiples llamadas a la API de ML): limitar bursts.
+  if (!(await rateLimit(getClientIp(req), "ml_items", 12, 60))) {
+    return NextResponse.json({ error: "Demasiadas solicitudes. Esperá un momento." }, { status: 429 });
+  }
 
   const conn = await getConnectionByMlUserId(mlUid);
   if (!conn) return NextResponse.json({ error: "Sin conexión" }, { status: 404 });

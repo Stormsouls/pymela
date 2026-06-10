@@ -19,7 +19,7 @@ export function getSupabaseServer() {
 const FREE_LIMIT = 9999; // sin límite por ahora
 
 // Hash simple de IP para no guardar datos personales
-async function hashIp(ip: string): Promise<string> {
+export async function hashIp(ip: string): Promise<string> {
   const buf = await crypto.subtle.digest(
     "SHA-256",
     new TextEncoder().encode(ip + "pymela-salt-2026")

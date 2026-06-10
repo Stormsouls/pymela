@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase-server";
+import { getVerifiedMlUid, ML_COOKIE_NAME } from "@/lib/ml-session";
 
 export const runtime = "nodejs";
 
-// GET — devuelve la conexión ML del usuario identificado por cookie pymela_ml_uid
+// GET — devuelve la conexión ML del usuario identificado por cookie firmada
 export async function GET(req: NextRequest) {
-  const mlUid = req.cookies.get("pymela_ml_uid")?.value;
+  const mlUid = getVerifiedMlUid(req);
   if (!mlUid) return NextResponse.json(null);
 
   const db = getSupabaseServer();
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
 
 // PATCH — actualiza campos de la conexión
 export async function PATCH(req: NextRequest) {
-  const mlUid = req.cookies.get("pymela_ml_uid")?.value;
+  const mlUid = getVerifiedMlUid(req);
   if (!mlUid) return NextResponse.json({ error: "No identificado" }, { status: 401 });
 
   let body: Record<string, unknown>;
@@ -47,7 +48,7 @@ export async function PATCH(req: NextRequest) {
 
 // DELETE — desconectar
 export async function DELETE(req: NextRequest) {
-  const mlUid = req.cookies.get("pymela_ml_uid")?.value;
+  const mlUid = getVerifiedMlUid(req);
   if (!mlUid) return NextResponse.json({ error: "No identificado" }, { status: 401 });
 
   const db = getSupabaseServer();
@@ -55,6 +56,6 @@ export async function DELETE(req: NextRequest) {
   await (db.from("ml_connections") as any).delete().eq("ml_user_id", mlUid);
 
   const res = NextResponse.json({ ok: true });
-  res.cookies.set("pymela_ml_uid", "", { path: "/", maxAge: 0 });
+  res.cookies.set(ML_COOKIE_NAME, "", { path: "/", maxAge: 0 });
   return res;
 }

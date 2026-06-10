@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exchangeCode, mlFetch } from "@/lib/ml-api";
 import { getSupabaseServer } from "@/lib/supabase-server";
+import { ML_COOKIE_NAME, ML_COOKIE_OPTIONS, makeMlCookieValue } from "@/lib/ml-session";
 
 export const runtime = "nodejs";
 
@@ -66,14 +67,10 @@ export async function GET(req: NextRequest) {
     }, { onConflict: "ml_user_id" });
     if (upsertErr) throw new Error(`DB upsert failed: ${upsertErr.message}`);
 
-    // Guardar ml_user_id en cookie para que la página pueda identificar la conexión
+    // Guardar cookie de sesión FIRMADA — el ml_user_id es público, así que sin
+    // firma cualquiera podría falsificarla y tomar control de otra cuenta.
     const redirect = NextResponse.redirect(new URL("/conectar-ml?success=1", req.url));
-    redirect.cookies.set("pymela_ml_uid", mlUserId, {
-      path: "/",
-      httpOnly: false,
-      maxAge: 60 * 60 * 24 * 365,
-      sameSite: "lax",
-    });
+    redirect.cookies.set(ML_COOKIE_NAME, makeMlCookieValue(mlUserId), ML_COOKIE_OPTIONS);
     return redirect;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

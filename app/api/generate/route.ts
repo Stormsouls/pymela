@@ -3,6 +3,7 @@ import { groq, DEFAULT_MODEL } from "@/lib/groq";
 import { buildPrompt } from "@/lib/prompts";
 import { getBot } from "@/lib/bots";
 import { checkAndRecordGeneration } from "@/lib/supabase-server";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -46,12 +47,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Verificar límite free (3 generaciones / 24h por IP)
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
-    req.headers.get("x-real-ip") ??
-    "unknown";
+  const ip = getClientIp(req);
 
+  // Anti-abuso: tope de bursts por minuto (un humano no llega; un script sí).
+  if (!(await rateLimit(ip, "generate", 20, 60))) {
+    return NextResponse.json(
+      { error: "Demasiadas generaciones seguidas. Esperá un minuto." },
+      { status: 429 }
+    );
+  }
+
+  // Verificar límite free por IP
   const { allowed, used } = await checkAndRecordGeneration(ip, slug);
   if (!allowed) {
     return NextResponse.json(

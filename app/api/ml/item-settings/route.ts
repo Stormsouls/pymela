@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase-server";
+import { getVerifiedMlUid } from "@/lib/ml-session";
 
 export const runtime = "nodejs";
 
 // PATCH — upsert configuración de una publicación específica
 export async function PATCH(req: NextRequest) {
-  const mlUid = req.cookies.get("pymela_ml_uid")?.value;
+  const mlUid = getVerifiedMlUid(req);
   if (!mlUid) return NextResponse.json({ error: "No identificado" }, { status: 401 });
 
   let body: { item_id?: string; active?: boolean; custom_playbook?: string; title?: string; thumbnail?: string };

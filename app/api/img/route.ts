@@ -23,14 +23,20 @@ export async function GET(req: Request) {
     return new Response("Protocolo no permitido", { status: 400 });
   }
 
-  // Bloquear IPs privadas
+  // Bloquear IPs privadas / red interna (anti-SSRF)
   const host = parsed.hostname.toLowerCase();
   if (
     host === "localhost" ||
+    host.endsWith(".localhost") ||
+    host === "0.0.0.0" ||
+    host === "::1" ||
+    host === "169.254.169.254" ||      // metadata de cloud
     host.startsWith("127.") ||
     host.startsWith("192.168.") ||
     host.startsWith("10.") ||
-    host === "::1"
+    host.startsWith("169.254.") ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+    host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe80")
   ) {
     return new Response("IP privada no permitida", { status: 403 });
   }

@@ -1,7 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { groq, DEFAULT_MODEL } from "@/lib/groq";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
+
+// Bloquea hosts que apunten a la red interna (evita SSRF al fetchear URLs del usuario).
+function isPrivateHost(host: string): boolean {
+  const h = host.toLowerCase();
+  return (
+    h === "localhost" ||
+    h.endsWith(".localhost") ||
+    h === "0.0.0.0" ||
+    h === "::1" ||
+    h === "169.254.169.254" ||      // metadata de cloud (AWS/GCP/Azure)
+    h.startsWith("127.") ||
+    h.startsWith("10.") ||
+    h.startsWith("192.168.") ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(h) ||  // 172.16.0.0 – 172.31.255.255
+    h.startsWith("169.254.") ||
+    h.startsWith("fc") || h.startsWith("fd") || h.startsWith("fe80")  // IPv6 privado/link-local
+  );
+}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -123,6 +142,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Body inválido" }, { status: 400 });
   }
 
+  if (!(await rateLimit(getClientIp(req), "scrape", 15, 60))) {
+    return NextResponse.json({ error: "Demasiadas solicitudes. Esperá un minuto." }, { status: 429 });
+  }
+
   const url = (body.url ?? "").trim();
   const content = (body.content ?? "").trim();
 
@@ -131,6 +154,10 @@ export async function POST(req: NextRequest) {
   let parsed: URL;
   try { parsed = new URL(url); } catch {
     return NextResponse.json({ error: "URL inválida" }, { status: 400 });
+  }
+
+  if (!["http:", "https:"].includes(parsed.protocol) || isPrivateHost(parsed.hostname)) {
+    return NextResponse.json({ error: "URL no permitida" }, { status: 400 });
   }
 
   // MercadoLibre: extraer del slug (API requiere auth)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getConnectionByMlUserId, getFreshToken, postAnswer } from "@/lib/ml-api";
+import { getFreshToken, postAnswer } from "@/lib/ml-api";
 import { getSupabaseServer } from "@/lib/supabase-server";
+import { getVerifiedMlUid } from "@/lib/ml-session";
 
 export const runtime = "nodejs";
 
@@ -11,6 +12,9 @@ export async function POST(req: NextRequest) {
   try { body = await req.json(); } catch {
     return NextResponse.json({ error: "Body inválido" }, { status: 400 });
   }
+
+  const mlUid = getVerifiedMlUid(req);
+  if (!mlUid) return NextResponse.json({ error: "No identificado" }, { status: 401 });
 
   const { draft_id, action, edited_text } = body;
   if (!draft_id || !action) {
@@ -29,6 +33,11 @@ export async function POST(req: NextRequest) {
 
   if (error || !draft) {
     return NextResponse.json({ error: "Borrador no encontrado" }, { status: 404 });
+  }
+
+  // Verificar que el borrador pertenece a la cuenta de la cookie firmada
+  if (draft.ml_connections?.ml_user_id !== mlUid) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
   if (action === "reject") {
