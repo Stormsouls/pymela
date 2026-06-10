@@ -114,6 +114,28 @@ npm run build          # build de producción (pasa OK)
 
 ---
 
+## Seguridad (auditoría 2026-06-10)
+**Patrón obligatorio**: TODA tabla nueva en Supabase debe llevar `enable row level security`
+en su migration. Las tablas del proyecto se acceden SOLO desde el server con service_role
+(que bypassa RLS), así que alcanza con habilitar RLS sin policies para anon/authenticated.
+La anon key viaja en el bundle del cliente: una tabla sin RLS queda 100% abierta a lectura/escritura.
+
+✅ Arreglado:
+- Cookie de sesión ML (`pymela_ml_uid`) firmada con HMAC (`lib/ml-session.ts`), httpOnly+secure. Antes guardaba el ml_user_id público sin firma → account takeover.
+- RLS habilitado en `ml_item_settings` y `rate_events` (estaban abiertas con anon key — leak de playbooks + bypass de rate-limit).
+- Rate-limit anti-abuso (`lib/rate-limit.ts`, tabla `rate_events`): generate 20/min, scrape 15/min, pdf 20/min, jina 15/min, ml_items 12/min, ml_webhook 100/min.
+- Security headers en `next.config.ts` (X-Frame-Options, CSP frame-ancestors, HSTS, nosniff, etc.).
+- OAuth: nonce anti-CSRF en cookie (`ml_oauth_state`), validado en callback.
+- Webhook ML: validación de `application_id` + anti-flood.
+- Prompt-injection hardening: el texto del comprador va delimitado y tratado como no-instrucción.
+- SSRF: `/api/scrape` y `/api/img` bloquean IPs privadas + metadata cloud (169.254.169.254).
+- IDOR en `/api/ml/approve`: verifica pertenencia del draft a la cookie firmada.
+
+🔴 Pendientes de seguridad (requieren decisión / sesión dedicada):
+1. **Tokens ML en texto plano** en `ml_connections.access_token/refresh_token`. Cifrar en reposo (riesgo si se filtra la DB o la service_role). Cambio mediano: tocar callback + getFreshToken + approve + migrar tokens existentes.
+2. **Rotar GROQ_API_KEY** (sigue siendo la de Bienestar; no filtrada en git, pero conviene key dedicada).
+3. Webhook usa procesamiento async sin `waitUntil` → confiabilidad (puede cortarse la respuesta antes de publicar).
+
 ## Regla permanente
 Al final de cada sesión (o cuando el user pida cambiar de conversación), **actualizar este archivo**.
 NO crear archivos nuevos de resumen — siempre actualizar este.
