@@ -131,10 +131,15 @@ La anon key viaja en el bundle del cliente: una tabla sin RLS queda 100% abierta
 - SSRF: `/api/scrape` y `/api/img` bloquean IPs privadas + metadata cloud (169.254.169.254).
 - IDOR en `/api/ml/approve`: verifica pertenencia del draft a la cookie firmada.
 
-🔴 Pendientes de seguridad (requieren decisión / sesión dedicada):
-1. **Tokens ML en texto plano** en `ml_connections.access_token/refresh_token`. Cifrar en reposo (riesgo si se filtra la DB o la service_role). Cambio mediano: tocar callback + getFreshToken + approve + migrar tokens existentes.
-2. **Rotar GROQ_API_KEY** (sigue siendo la de Bienestar; no filtrada en git, pero conviene key dedicada).
-3. Webhook usa procesamiento async sin `waitUntil` → confiabilidad (puede cortarse la respuesta antes de publicar).
+✅ Tokens ML cifrados en reposo (AES-256-GCM, `lib/crypto.ts`, env `ML_TOKEN_ENC_KEY`).
+   callback cifra al guardar; getFreshToken descifra al usar y recifra al refrescar.
+   2 tokens existentes migrados. `decrypt` tiene fallback legacy (valores sin prefijo `v1:`).
+   NOTA: la env `ML_TOKEN_ENC_KEY` en Vercel se cargó vía REST API (el CLI 54.x no toma stdin).
+   El token del CLI de Vercel está en `%APPDATA%\xdg.data\com.vercel.cli\auth.json` (con comentarios // que hay que filtrar para parsear).
+
+🔴 Pendientes de seguridad:
+1. **Rotar GROQ_API_KEY** (sigue siendo la de Bienestar). Requiere crear key nueva en console.groq.com (login manual). Luego cargar en Vercel + .env.local.
+2. Webhook usa procesamiento async sin `waitUntil` → confiabilidad (puede cortarse la respuesta antes de publicar).
 
 ## Regla permanente
 Al final de cada sesión (o cuando el user pida cambiar de conversación), **actualizar este archivo**.
