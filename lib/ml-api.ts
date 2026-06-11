@@ -1,5 +1,6 @@
 // MercadoLibre API helpers — solo se importan en el servidor.
 import { getSupabaseServer } from "./supabase-server";
+import { encrypt, decrypt } from "./crypto";
 
 const ML_BASE = "https://api.mercadolibre.com";
 const APP_ID = process.env.ML_APP_ID!;
@@ -38,11 +39,13 @@ export async function getConnectionByUserId(userId: string): Promise<MlConnectio
   return data ?? null;
 }
 
-// Refresca el token si expira en menos de 5 minutos
+// Refresca el token si expira en menos de 5 minutos.
+// Los tokens se guardan cifrados en reposo; acá se descifran para uso y se
+// vuelven a cifrar al persistir. Siempre devuelve el access_token en claro.
 export async function getFreshToken(conn: MlConnection): Promise<string> {
   const expiresAt = new Date(conn.token_expires_at).getTime();
   const now = Date.now();
-  if (expiresAt - now > 5 * 60 * 1000) return conn.access_token;
+  if (expiresAt - now > 5 * 60 * 1000) return decrypt(conn.access_token);
 
   // Refrescar
   const res = await fetch(`${ML_BASE}/oauth/token`, {
@@ -52,7 +55,7 @@ export async function getFreshToken(conn: MlConnection): Promise<string> {
       grant_type: "refresh_token",
       client_id: APP_ID,
       client_secret: CLIENT_SECRET,
-      refresh_token: conn.refresh_token,
+      refresh_token: decrypt(conn.refresh_token),
     }),
   });
 
@@ -63,8 +66,8 @@ export async function getFreshToken(conn: MlConnection): Promise<string> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (db.from("ml_connections") as any)
     .update({
-      access_token: data.access_token,
-      refresh_token: data.refresh_token ?? conn.refresh_token,
+      access_token: encrypt(data.access_token),
+      refresh_token: encrypt(data.refresh_token ?? decrypt(conn.refresh_token)),
       token_expires_at: new Date(Date.now() + data.expires_in * 1000).toISOString(),
     })
     .eq("id", conn.id);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { exchangeCode, mlFetch } from "@/lib/ml-api";
 import { getSupabaseServer } from "@/lib/supabase-server";
 import { ML_COOKIE_NAME, ML_COOKIE_OPTIONS, makeMlCookieValue } from "@/lib/ml-session";
+import { encrypt } from "@/lib/crypto";
 
 export const runtime = "nodejs";
 
@@ -67,8 +68,8 @@ export async function GET(req: NextRequest) {
       user_id: userId,
       ml_user_id: mlUserId,
       ml_nickname: mlUser.nickname ?? mlUser.first_name ?? "Vendedor",
-      access_token: tokens.access_token,
-      refresh_token: tokens.refresh_token ?? "",
+      access_token: encrypt(tokens.access_token),
+      refresh_token: encrypt(tokens.refresh_token ?? ""),
       token_expires_at: expiresAt,
       updated_at: new Date().toISOString(),
     }, { onConflict: "ml_user_id" });
