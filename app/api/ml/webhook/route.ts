@@ -10,8 +10,11 @@ import {
 import { groq, DEFAULT_MODEL } from "@/lib/groq";
 import { getSupabaseServer } from "@/lib/supabase-server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { waitUntil } from "@vercel/functions";
 
 export const runtime = "nodejs";
+// Damos margen para que el procesamiento en background (Groq + ML) termine.
+export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
   // Anti-flood: el webhook es público. ML reintenta con backoff, así que un tope
@@ -39,9 +42,12 @@ export async function POST(req: NextRequest) {
   const mlUserId = String(body.user_id ?? "");
   if (!questionId || !mlUserId) return new NextResponse("ok", { status: 200 });
 
-  // Respuesta inmediata — ML no espera
-  processQuestion(questionId, mlUserId).catch((err) =>
-    console.error("[ml/webhook]", err instanceof Error ? err.message : err)
+  // Respondemos 200 de inmediato (ML no espera), pero waitUntil mantiene viva la
+  // función hasta que el procesamiento en background termine de publicar la respuesta.
+  waitUntil(
+    processQuestion(questionId, mlUserId).catch((err) =>
+      console.error("[ml/webhook]", err instanceof Error ? err.message : err)
+    )
   );
 
   return new NextResponse("ok", { status: 200 });
