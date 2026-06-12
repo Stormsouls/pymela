@@ -11,12 +11,54 @@ import { useHistory } from "@/hooks/useHistory";
 
 const FREE_USES = 9999; // sin límite por ahora
 
+// Encabezados que genera el bot de descripciones — permiten copiar cada bloque por separado.
+const SECTION_HEADERS = [
+  "TÍTULO",
+  "TÍTULOS ALTERNATIVOS",
+  "DESCRIPCIÓN",
+  "FICHA TÉCNICA",
+  "PALABRAS CLAVE SEO",
+  "CAPTION PRINCIPAL",
+  "DESCRIPCIÓN COMPLETA",
+  "HASHTAGS",
+];
+
+type Section = { title: string; body: string };
+
+function parseSections(text: string): Section[] {
+  const sections: Section[] = [];
+  let current: Section | null = null;
+  for (const line of text.split("\n")) {
+    const t = line.trim();
+    if (SECTION_HEADERS.includes(t)) {
+      if (current) sections.push({ ...current, body: current.body.trim() });
+      current = { title: t, body: "" };
+    } else if (current) {
+      current.body += line + "\n";
+    }
+  }
+  if (current) sections.push({ ...current, body: current.body.trim() });
+  return sections.filter((s) => s.body);
+}
+
+const ML_CHECKLIST = [
+  "Subí 8-10 fotos (la primera con fondo blanco y el producto ocupando el 85% del encuadre).",
+  "Agregá un video corto (menos de 60 segundos) mostrando el producto en uso.",
+  "Completá TODOS los atributos de la ficha técnica — es el segundo factor de posicionamiento.",
+  "Poné el precio dentro de la mediana del mercado (ni el más caro ni regalado).",
+  "Activá Mercado Envíos (Full o Flex). Nunca dejes solo \"acordar con el comprador\".",
+  "Respondé las preguntas en menos de 1 hora — la velocidad de respuesta afecta el ranking.",
+  "No pauses la publicación: se reinicia el historial de relevancia.",
+  "Las primeras 48-72 hs definen la exposición: considerá Product Ads en el lanzamiento.",
+];
+
 export function BotForm({ bot }: { bot: Bot }) {
   const [values, setValues] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copiedSection, setCopiedSection] = useState<number | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [scrapeUrl, setScrapeUrl] = useState("");
   const [scrapeLoading, setScrapeLoading] = useState(false);
@@ -362,11 +404,45 @@ export function BotForm({ bot }: { bot: Bot }) {
 
       {result && (
         <div className="mt-8">
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
-            <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-zinc-800">
-              {result}
-            </pre>
-          </div>
+          {(() => {
+            const sections = bot.slug === "descripciones" ? parseSections(result) : [];
+            if (sections.length < 2) {
+              return (
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+                  <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-zinc-800">
+                    {result}
+                  </pre>
+                </div>
+              );
+            }
+            return (
+              <div className="space-y-3">
+                {sections.map((s, i) => (
+                  <div key={i} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{s.title}</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(s.body).then(() => {
+                            setCopiedSection(i);
+                            setTimeout(() => setCopiedSection(null), 1800);
+                          }).catch(() => { /* clipboard no disponible */ });
+                        }}
+                        className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100"
+                      >
+                        {copiedSection === i ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                        {copiedSection === i ? "¡Copiado!" : "Copiar"}
+                      </button>
+                    </div>
+                    <pre className="mt-2 whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-zinc-800">
+                      {s.body}
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
 
           <div className="mt-4 flex flex-wrap gap-2.5">
             <button
@@ -401,6 +477,26 @@ export function BotForm({ bot }: { bot: Bot }) {
           </div>
 
           {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
+
+          {/* Checklist de posicionamiento — solo descripciones para ML */}
+          {bot.slug === "descripciones" && (values.plataforma ?? "").includes("Mercado") && (
+            <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
+              <p className="text-sm font-semibold text-emerald-800">
+                📈 Checklist para posicionar tu publicación
+              </p>
+              <p className="mt-0.5 text-xs text-emerald-700/70">
+                El texto es la mitad del trabajo — esto completa el resto del algoritmo de MercadoLibre.
+              </p>
+              <ul className="mt-3 space-y-1.5">
+                {ML_CHECKLIST.map((item, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-emerald-900">
+                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Prompt historial inline — solo para usuarios anónimos */}
           {isAnon && (

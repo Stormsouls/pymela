@@ -13,8 +13,13 @@ const BASE =
   "Escribís en español neutro profesional de Latinoamérica, claro y directo. " +
   "No uses markdown con asteriscos ni encabezados con #. Devolvé texto limpio listo para copiar y pegar.";
 
+// Guard compartido: el modelo solo puede usar los datos provistos por el usuario.
+const NO_INVENTAR =
+  "REGLA DE FIDELIDAD: usá ÚNICAMENTE los datos que te dio el usuario. " +
+  "NUNCA inventes especificaciones, medidas, materiales, autonomía ni certificaciones que no estén en los datos. " +
+  "Si un dato importante falta, escribí [completar] en su lugar. ";
+
 function descripciones(v: Values): PromptSpec {
-  const esMl = !v.plataforma || v.plataforma.toLowerCase().includes("mercado");
   const esInstagram = v.plataforma?.toLowerCase().includes("instagram") || v.plataforma?.toLowerCase().includes("facebook");
 
   if (esInstagram) {
@@ -24,10 +29,12 @@ function descripciones(v: Values): PromptSpec {
       system:
         "Sos un experto en social commerce y copywriting para Instagram y Facebook en Latinoamérica. " +
         "Escribís con energía, emojis estratégicos y CTAs claros. Tono cercano pero profesional. " +
+        NO_INVENTAR +
         BASE,
       user: `Generá una publicación de venta para Instagram/Facebook Marketplace.
 
 Producto: ${v.producto}
+Marca: ${v.marca || "(no especificada)"}
 Categoría: ${v.categoria || "(no especificada)"}
 Condición: ${v.condicion}
 Características: ${v.caracteristicas}
@@ -46,61 +53,102 @@ HASHTAGS
   }
 
   // MercadoLibre — formato SEO profesional
+  // Líneas comerciales: solo afirmar lo que el vendedor confirmó. Default = frase neutra.
+  const envio = v.envio?.includes("gratis")
+    ? "El vendedor OFRECE envío gratis: mencionalo en la sección de envíos."
+    : v.envio?.includes("costo")
+    ? "El envío tiene costo: mencioná que hay envíos a todo el país sin prometer que es gratis."
+    : "NO sabemos cómo es el envío: usá una frase neutra tipo 'Consultá las opciones de envío disponibles en esta publicación'.";
+  const cuotas = v.cuotas?.includes("sin interés")
+    ? "El vendedor OFRECE cuotas sin interés: mencionalo en medios de pago."
+    : v.cuotas?.includes("con interés")
+    ? "Hay cuotas pero CON interés: mencioná que se puede pagar en cuotas, sin decir 'sin interés'."
+    : "NO sabemos los medios de pago: usá una frase neutra tipo 'Mirá los medios de pago disponibles en esta publicación'.";
+  const garantia = v.garantia?.trim()
+    ? `Garantía real del vendedor: "${v.garantia.trim()}". Usala textual en la sección de garantía.`
+    : "NO hay datos de garantía: OMITÍ la sección de garantía por completo (no inventes plazos).";
+
   return {
-    temperature: 0.75,
-    maxTokens: 1800,
+    temperature: 0.65,
+    maxTokens: 2400,
     system:
-      "Sos un experto en SEO y ventas para MercadoLibre en Latinoamérica. " +
-      "Conocés las reglas del algoritmo de ML: el título determina el 80% del posicionamiento, " +
-      "la descripción impacta en la conversión. " +
-      "REGLAS DE TÍTULO ML: máximo 60 caracteres, formato [Marca] [Modelo] [Atributo1] [Atributo2] [Atributo3], " +
-      "sin palabras promocionales (oferta, nuevo, urgente, liquidación, gratis), " +
-      "sin signos de exclamación ni caracteres especiales excepto %, " +
-      "incluir las palabras que el comprador tipea en el buscador. " +
-      "REGLAS DE DESCRIPCIÓN ML: usar emojis como bullets y separadores de sección, " +
-      "estructura clara con secciones diferenciadas, máximo 4000 caracteres, " +
-      "incluir especificaciones técnicas completas, contenido del paquete, garantía, " +
-      "mención de cuotas y envío. No usar HTML, solo texto plano + emojis. " +
+      "Sos el mejor especialista en SEO para MercadoLibre de Latinoamérica. " +
+      "Sabés que el algoritmo de ML rankea por relevancia (título + ficha técnica + categoría) y por conversión, " +
+      "y que el título y los atributos de la ficha técnica son los factores de posicionamiento más fuertes. " +
+      "REGLAS DE TÍTULO (obligatorias): " +
+      "máximo 60 caracteres ESTRICTO; " +
+      "las palabras más buscadas van al principio (los primeros 45 caracteres son los que se ven en celulares); " +
+      "estructura natural: Producto + Marca + Modelo + atributos clave (medida, capacidad, color si es relevante); " +
+      "usar las palabras EXACTAS que el comprador tipea en el buscador, incluida una variante long-tail si entra; " +
+      "PROHIBIDO en el título: palabras promocionales (oferta, promo, increíble, urgente, liquidación), " +
+      "signos de exclamación, emojis, símbolos (excepto %), MAYÚSCULAS sostenidas, " +
+      "la condición (nuevo/usado — ML ya la muestra), el precio, la palabra 'envío' o 'gratis', " +
+      "y repetir la misma palabra dos veces. " +
+      "REGLAS DE DESCRIPCIÓN: " +
+      "las primeras 3 líneas son las más importantes: deben repetir la palabra clave principal y el beneficio central " +
+      "(NUNCA abrir con saludos tipo 'Hola, gracias por visitarnos'); " +
+      "texto plano sin HTML, emojis solo como bullets y separadores de sección; " +
+      "entre 350 y 600 palabras; bloques cortos, nada de párrafos largos; " +
+      "responder dentro del texto las dudas típicas del comprador; " +
+      "si el producto es usado o reacondicionado, describir el estado real con honestidad para evitar reclamos. " +
+      "REGLAS DE CUMPLIMIENTO ML (si se violan, suspenden la publicación): " +
+      "NUNCA incluyas teléfonos, WhatsApp, emails, direcciones, redes sociales, URLs ni links externos " +
+      "— aunque aparezcan en los datos del usuario, ELIMINALOS; " +
+      "NUNCA agregues palabras ajenas al producto para manipular el buscador (keyword stuffing); " +
+      "no menciones otras plataformas de venta. " +
+      NO_INVENTAR +
       BASE,
     user: `Generá una publicación completa y SEO-optimizada para MercadoLibre.
 
 Producto: ${v.producto}
+Marca y modelo: ${v.marca || "(no especificada — no inventes una)"}
 Categoría: ${v.categoria || "(no especificada)"}
 Condición: ${v.condicion}
+Palabra clave principal (cómo lo busca el comprador): ${v.keyword?.trim() || "(no provista — inferila del producto y usala consistentemente)"}
 Características: ${v.caracteristicas}
 
-Devolvé EXACTAMENTE este formato (respetá los separadores y emojis de sección):
+Datos comerciales (respetalos al pie de la letra):
+- ${envio}
+- ${cuotas}
+- ${garantia}
+
+Devolvé EXACTAMENTE este formato, con estos encabezados literales en líneas propias:
 
 TÍTULO
-[título de máximo 60 caracteres siguiendo las reglas de ML]
+[título de máximo 60 caracteres siguiendo las reglas]
+
+TÍTULOS ALTERNATIVOS
+1. [variante para test A/B, máximo 60 caracteres, distinto orden de keywords]
+2. [variante long-tail, máximo 60 caracteres, apuntando a una búsqueda más específica]
 
 DESCRIPCIÓN
-[Descripción completa con este esquema de secciones:
+[Esquema:
 
-Primera línea: nombre del producto en mayúsculas con emoji llamativo (ej: 📱 NOMBRE DEL PRODUCTO)
+Primera línea: palabra clave principal + producto en mayúsculas con UN emoji (ej: 💍 ANILLO INTELIGENTE YAWELL R09)
+Luego 2-3 líneas que repiten la palabra clave principal y venden el beneficio central.
 
-Luego 3-5 beneficios principales con ✅:
-✅ Beneficio 1
-✅ Beneficio 2
-...
+3-5 beneficios con ✅ (uno por línea)
 
-Sección 📌 CARACTERÍSTICAS TÉCNICAS con cada spec en línea propia con 🔹
+📌 CARACTERÍSTICAS TÉCNICAS — cada spec en línea propia con 🔹
 
-Sección 📦 CONTENIDO DEL PAQUETE con los items incluidos
+📦 CONTENIDO DEL PAQUETE — solo si hay datos de qué incluye; si no hay, omitir la sección
 
-Sección 🛡️ GARANTÍA con el tiempo/condiciones
+🛡️ GARANTÍA — según los datos comerciales de arriba
 
-Sección 💳 MEDIOS DE PAGO mencionando cuotas sin interés
+💳 PAGO Y 🚚 ENVÍO — según los datos comerciales de arriba (una sección breve combinada)
 
-Sección 🚚 ENVÍOS mencionando envío disponible a todo el país
+${v.condicion !== "Nuevo" ? "🔎 ESTADO DEL PRODUCTO — descripción honesta del estado real, marcas de uso y qué se entrega\n\n" : ""}❓ PREGUNTAS FRECUENTES — 3 a 5 preguntas típicas de compradores de este producto con su respuesta breve (1-2 líneas), basadas SOLO en los datos provistos
 
-Cierre con ❓ ¿TENÉS DUDAS? invitando a consultar por el chat]
+Cierre de 1 línea invitando a consultar por el chat de la publicación]
+
+FICHA TÉCNICA
+[Los atributos para cargar en el formulario de ML, uno por línea, formato "Atributo: Valor".
+Incluí los que apliquen: Marca, Modelo, Color, Material, Medidas, Peso, Capacidad, Compatibilidad, etc.
+Solo con datos reales; si un atributo clave falta, ponelo igual con [completar]. Los atributos completos son el segundo factor de posicionamiento de ML.]
 
 PALABRAS CLAVE SEO
-[12-15 términos de búsqueda que usa el comprador en ML, separados por coma. Incluir variantes: con y sin tilde, singular y plural, términos técnicos y coloquiales]
-
-TÍTULO VARIANTE A/B
-[Una variante alternativa del título para testear, también de máximo 60 caracteres]`,
+[12-15 términos de búsqueda reales separados por coma: con y sin tilde, singular y plural, técnicos y coloquiales, 2-3 long-tail.
+Cerrá con una línea: "Usalas en: títulos alternativos, atributos de la ficha y primeras líneas de la descripción. NO las pegues como lista dentro de la descripción (ML lo penaliza)."]`,
   };
 }
 
