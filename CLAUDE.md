@@ -85,6 +85,15 @@ npm run build          # build de producción (pasa OK)
 - Gating: 3 generaciones / 24h por IP hash (SHA-256 + salt). Sin auth por ahora.
 - `lib/supabase-server.ts` — `checkAndRecordGeneration(ip, slug)` con service_role
 
+## Bot descripciones ML — mejora SEO mayor (2026-06-13)
+Auditoría SEO ML 2026 + reescritura completa. Deployado a prod y verificado end-to-end.
+- **Prompt nuevo** (`lib/prompts.ts`): keyword del comprador al frente del título (primeros 45 chars visibles en mobile), primeras 3 líneas de descripción repiten keyword, sección FICHA TÉCNICA (atributos `Atributo: Valor` — 2º factor de ranking ML), FAQ 3-5 preguntas, sección ESTADO para usados/reacondicionados, 2 títulos alternativos para A/B.
+- **Compliance ML**: prohíbe datos de contacto/URLs/redes (los elimina aunque vengan en el input — verificado con trampa), prohíbe keyword stuffing. Guard anti-invención de specs (`NO_INVENTAR`, compartido con branch Instagram).
+- **Campos nuevos en form** (`lib/bots.ts`): marca, keyword ("¿cómo lo buscaría tu comprador?"), envío, cuotas, garantía. Si no se completan → frases neutras (nunca promete cuotas sin interés/envío gratis/garantía no confirmados; garantía vacía = sección omitida).
+- **Validación server-side 60 chars** (`app/api/generate/route.ts`, `enforceMlTitleLimit`): parsea TÍTULO + TÍTULOS ALTERNATIVOS, si alguno >60 hace segunda pasada Groq para acortar (fallback: truncado por palabra). Solo corre para slug descripciones; el branch Instagram no tiene línea "TÍTULO" así que no lo toca.
+- **BotForm**: resultado parseado en secciones con botón copiar individual (headers en `SECTION_HEADERS`) + checklist estático de posicionamiento ML (fotos/video/Full/precio/48hs — cero costo de tokens).
+- temperature 0.75→0.65, maxTokens 1800→2400.
+
 ## Estado actual (al cierre — 2026-05-31)
 ✅ Scaffolding Next.js 16 + Tailwind v4 + deps instaladas
 ✅ Registro de 5 bots + prompts LatAm + form dinámico
