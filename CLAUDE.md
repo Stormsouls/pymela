@@ -137,9 +137,10 @@ La anon key viaja en el bundle del cliente: una tabla sin RLS queda 100% abierta
    NOTA: la env `ML_TOKEN_ENC_KEY` en Vercel se cargó vía REST API (el CLI 54.x no toma stdin).
    El token del CLI de Vercel está en `%APPDATA%\xdg.data\com.vercel.cli\auth.json` (con comentarios // que hay que filtrar para parsear).
 
+✅ GROQ_API_KEY rotada (2026-06-12): key nueva dedicada de Pymela cargada en Vercel (PATCH REST API) + .env.local + redeploy + verificada con /api/generate. FALTA que el user revoque la key vieja (`gsk_v5eY...Wl30`) en console.groq.com.
+
 🔴 Pendientes de seguridad:
-1. **Rotar GROQ_API_KEY** (sigue siendo la de Bienestar). Requiere crear key nueva en console.groq.com (login manual). Luego cargar en Vercel + .env.local.
-2. Webhook usa procesamiento async sin `waitUntil` → confiabilidad (puede cortarse la respuesta antes de publicar).
+1. Webhook usa procesamiento async sin `waitUntil` → confiabilidad (puede cortarse la respuesta antes de publicar). No es seguridad, es robustez.
 
 ## Regla permanente
 Al final de cada sesión (o cuando el user pida cambiar de conversación), **actualizar este archivo**.
