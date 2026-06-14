@@ -94,6 +94,27 @@ Auditoría SEO ML 2026 + reescritura completa. Deployado a prod y verificado end
 - **BotForm**: resultado parseado en secciones con botón copiar individual (headers en `SECTION_HEADERS`) + checklist estático de posicionamiento ML (fotos/video/Full/precio/48hs — cero costo de tokens).
 - temperature 0.75→0.65, maxTokens 1800→2400.
 
+## Bot descripciones ML — fotos/videos/ficha-internet (2026-06-14)
+- **/api/enrich** (nuevo): completa la ficha con specs reales de la web. DuckDuckGo HTML
+  leído con Jina Reader (r.jina.ai) + extracción con Groq sin inventar + cita fuentes.
+  UI: botón "Buscar más specs en internet" en la sección FICHA.
+- **Fotos** (/api/jina): alta resolución mlstatic (2X/-O), dedupe por id de producto,
+  prioriza fotos del producto, hasta 30.
+- **Videos** (/api/jina): extrae videos propios descargables (mp4/webm + clips ML).
+  No YouTube/terceros (no descargables). Galería con preview + descarga vía /api/img.
+- **ML scraping** (/api/scrape `handleMercadoLibre`): la API pública de ML da 403 y el
+  scraping anónimo está bloqueado por anti-bot (incluso el browser engine de Jina trae
+  página vacía de 256 chars). Solución: si hay cookie OAuth (`getVerifiedMlUid`), trae
+  datos + fotos HD vía API oficial (getItem); si no, hint para pegar link del proveedor
+  o conectar la cuenta.
+- ⚠️ **PENDIENTE — JINA_API_KEY**: Jina restringió su tier anónimo. Desde las IPs de
+  datacenter de Vercel devuelve contenido vacío (status 20000) → enrich y scraping de
+  fotos de sitios NO funcionan en prod sin key. El código YA soporta `JINA_API_KEY`
+  (Authorization Bearer + X-Engine browser) en /api/jina y /api/enrich; falta crear la
+  key gratis en jina.ai/reader y cargarla como env var en Vercel. En local (IP
+  residencial) el enrich funcionó (13 atributos iPhone + 3 fuentes).
+- Para fotos de ML específicamente: conectar la cuenta en /conectar-ml (OAuth).
+
 ## Estado actual (al cierre — 2026-05-31)
 ✅ Scaffolding Next.js 16 + Tailwind v4 + deps instaladas
 ✅ Registro de 5 bots + prompts LatAm + form dinámico
