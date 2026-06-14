@@ -34,9 +34,9 @@ export const BOTS: Bot[] = [
   {
     slug: "descripciones",
     name: "Descripciones para MercadoLibre",
-    tagline: "Título SEO + descripción que vende, en segundos.",
+    tagline: "Título y descripción para posicionar tu producto, en segundos.",
     description:
-      "Convertí los datos de tu producto en un título optimizado, bullets y una descripción persuasiva lista para publicar.",
+      "Convertí los datos de tu producto en un título y una descripción optimizados para posicionar mejor (SEO) y vender más en MercadoLibre. Listos para copiar y pegar.",
     icon: "ShoppingBag",
     image: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d",
     category: "Ventas",

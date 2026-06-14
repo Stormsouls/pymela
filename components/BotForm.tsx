@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Copy, Check, Download, FileDown, Loader2, Sparkles, RefreshCw, Link2, ScanSearch, ImageDown, Images, ChevronDown } from "lucide-react";
+import { ArrowLeft, Copy, Check, Download, FileDown, Loader2, Sparkles, RefreshCw, Link2, ScanSearch, ImageDown, Images, ChevronDown, ExternalLink } from "lucide-react";
 import type { Bot } from "@/lib/bots";
 import { BotIcon } from "./BotIcon";
 import { cn } from "@/lib/utils";
@@ -41,7 +41,7 @@ function parseSections(text: string): Section[] {
   return sections.filter((s) => s.body);
 }
 
-const ML_CHECKLIST: { title: string; detail: string }[] = [
+const ML_CHECKLIST: { title: string; detail: string; link?: string; linkLabel?: string }[] = [
   {
     title: "Subí 8-10 fotos profesionales",
     detail:
@@ -70,7 +70,9 @@ const ML_CHECKLIST: { title: string; detail: string }[] = [
   {
     title: "Respondé las preguntas en menos de 1 hora",
     detail:
-      "La velocidad de respuesta es señal de buen vendedor para el algoritmo y mejora la conversión: muchos compran apenas les respondés. Mantener una tasa de respuesta alta habilita el indicador \"responde rápido\". Tip: el bot de Pymela puede responder las preguntas de ML por vos automáticamente.",
+      "La velocidad de respuesta es señal de buen vendedor para el algoritmo y mejora la conversión: muchos compran apenas les respondés. Mantener una tasa de respuesta alta habilita el indicador \"responde rápido\". Con Pymela podés conectar tu cuenta de MercadoLibre y dejar que el bot responda las preguntas por vos automáticamente, las 24 horas.",
+    link: "/conectar-ml",
+    linkLabel: "Activar respuestas automáticas",
   },
   {
     title: "No pauses la publicación",
@@ -99,6 +101,8 @@ export function BotForm({ bot }: { bot: Bot }) {
   const [scrapeHint, setScrapeHint] = useState<string | null>(null);
   const [scrapedImages, setScrapedImages] = useState<string[]>([]);
   const [downloadingAll, setDownloadingAll] = useState(false);
+  const [enfoqueIdx, setEnfoqueIdx] = useState(0);
+  const [mlHost, setMlHost] = useState("www.mercadolibre.com.ar");
 
   const { user, isAnon, signInWithEmail } = useAuth();
   const { saveGeneration } = useHistory();
@@ -152,6 +156,11 @@ export function BotForm({ bot }: { bot: Bot }) {
       if (!res.ok) throw new Error(data.error || "Error al scrapear");
       setValues((prev) => ({ ...prev, ...data.fields }));
       setScrapeHint(data.hint ?? null);
+      // Si el link es de MercadoLibre, recordamos el dominio del país para el botón "Publicar".
+      try {
+        const host = new URL(normalizedUrl).hostname;
+        if (host.includes("mercadolibre") || host.includes("mercadolivre")) setMlHost(host.replace(/^articulo\.|^www\./, "www."));
+      } catch { /* ignorar */ }
       setScrapeUrl("");
     } catch (err) {
       setScrapeError(err instanceof Error ? err.message : "Error inesperado");
@@ -160,16 +169,17 @@ export function BotForm({ bot }: { bot: Bot }) {
     }
   }
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function runGenerate(enfoque: number) {
     setError(null);
     setResult(null);
     setLoading(true);
     try {
+      // Para descripciones pasamos el enfoque para que "otra versión" cambie el ángulo SEO.
+      const payload = bot.slug === "descripciones" ? { ...values, _enfoque: String(enfoque) } : values;
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug: bot.slug, values }),
+        body: JSON.stringify({ slug: bot.slug, values: payload }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error al generar");
@@ -189,6 +199,19 @@ export function BotForm({ bot }: { bot: Bot }) {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setEnfoqueIdx(0);
+    await runGenerate(0);
+  }
+
+  // "Otra versión": mismo producto, distinto enfoque SEO (rota entre 4 ángulos).
+  async function regenerate() {
+    const next = enfoqueIdx + 1;
+    setEnfoqueIdx(next);
+    await runGenerate(next);
   }
 
   async function copy() {
@@ -483,7 +506,7 @@ export function BotForm({ bot }: { bot: Bot }) {
               className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3.5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
             >
               {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
-              {copied ? "¡Copiado!" : "Copiar"}
+              {copied ? "¡Copiado!" : "Copiar todo"}
             </button>
             <button
               onClick={downloadPdf}
@@ -500,13 +523,39 @@ export function BotForm({ bot }: { bot: Bot }) {
               <Download className="h-4 w-4" />
               .txt
             </button>
-            <button
-              onClick={reset}
-              className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Generar otro
-            </button>
+
+            {bot.slug === "descripciones" && (values.plataforma ?? "").includes("Mercado") && (
+              <a
+                href={`https://${mlHost}/vender`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-2 text-sm font-medium text-white hover:bg-emerald-600"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Publicar en MercadoLibre
+              </a>
+            )}
+
+            <div className="ml-auto flex flex-wrap gap-2.5">
+              {bot.slug === "descripciones" && (
+                <button
+                  onClick={regenerate}
+                  disabled={loading}
+                  title="Genera otra versión con un enfoque distinto, siempre optimizada para posicionar"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  Otra versión
+                </button>
+              )}
+              <button
+                onClick={reset}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+              >
+                <RefreshCw className="h-4 w-4" />
+                {bot.slug === "descripciones" ? "Editar datos" : "Generar otro"}
+              </button>
+            </div>
           </div>
 
           {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
@@ -536,9 +585,18 @@ export function BotForm({ bot }: { bot: Bot }) {
                         <ChevronDown className={cn("mt-0.5 h-4 w-4 shrink-0 text-emerald-500 transition-transform", open && "rotate-180")} />
                       </button>
                       {open && (
-                        <p className="px-3 pb-3 pl-8 text-xs leading-relaxed text-emerald-800/80">
-                          {item.detail}
-                        </p>
+                        <div className="px-3 pb-3 pl-8">
+                          <p className="text-xs leading-relaxed text-emerald-800/80">{item.detail}</p>
+                          {item.link && (
+                            <Link
+                              href={item.link}
+                              className="mt-2 inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                            >
+                              <Sparkles className="h-3 w-3" />
+                              {item.linkLabel}
+                            </Link>
+                          )}
+                        </div>
                       )}
                     </li>
                   );
