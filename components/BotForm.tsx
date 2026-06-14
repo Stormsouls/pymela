@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Copy, Check, Download, FileDown, Loader2, Sparkles, RefreshCw, Link2, ScanSearch, ImageDown, Images } from "lucide-react";
+import { ArrowLeft, Copy, Check, Download, FileDown, Loader2, Sparkles, RefreshCw, Link2, ScanSearch, ImageDown, Images, ChevronDown } from "lucide-react";
 import type { Bot } from "@/lib/bots";
 import { BotIcon } from "./BotIcon";
 import { cn } from "@/lib/utils";
@@ -41,15 +41,47 @@ function parseSections(text: string): Section[] {
   return sections.filter((s) => s.body);
 }
 
-const ML_CHECKLIST = [
-  "Subí 8-10 fotos (la primera con fondo blanco y el producto ocupando el 85% del encuadre).",
-  "Agregá un video corto (menos de 60 segundos) mostrando el producto en uso.",
-  "Completá TODOS los atributos de la ficha técnica — es el segundo factor de posicionamiento.",
-  "Poné el precio dentro de la mediana del mercado (ni el más caro ni regalado).",
-  "Activá Mercado Envíos (Full o Flex). Nunca dejes solo \"acordar con el comprador\".",
-  "Respondé las preguntas en menos de 1 hora — la velocidad de respuesta afecta el ranking.",
-  "No pauses la publicación: se reinicia el historial de relevancia.",
-  "Las primeras 48-72 hs definen la exposición: considerá Product Ads en el lanzamiento.",
+const ML_CHECKLIST: { title: string; detail: string }[] = [
+  {
+    title: "Subí 8-10 fotos profesionales",
+    detail:
+      "La primera foto define el clic desde los resultados: fondo blanco puro, producto bien iluminado ocupando ~85% del encuadre, sin textos ni logos encima (ML los penaliza). Las siguientes mostrá ángulos distintos, detalles de materiales, el producto en uso, las medidas con una referencia y el contenido de la caja. Más fotos de calidad = más confianza = más conversión, y la conversión es el factor #1 del algoritmo.",
+  },
+  {
+    title: "Agregá un video corto (menos de 60 s)",
+    detail:
+      "Desde 2025 el algoritmo prioriza el contenido audiovisual: un video mostrando el producto funcionando aumenta el tiempo de permanencia y la conversión (hay reportes de +40%). Mostrá el producto real en uso, sus detalles y beneficios prácticos. No hace falta producción profesional: con el celular bien estabilizado y buena luz alcanza.",
+  },
+  {
+    title: "Completá TODOS los atributos de la ficha técnica",
+    detail:
+      "Es el segundo factor de posicionamiento después del título. ML usa los atributos como datos estructurados para entender qué vendés y mostrarte en los filtros de búsqueda (marca, color, capacidad, etc.). Cada atributo vacío es una búsqueda en la que no aparecés. Usá la sección FICHA TÉCNICA que te generó el bot y completá también los \"sugeridos para completar\".",
+  },
+  {
+    title: "Precio dentro de la mediana del mercado",
+    detail:
+      "Buscá tu producto en ML y mirá el precio de los que están en las primeras posiciones: ubicate cerca de la mediana, no del mínimo (regalar el precio rompe margen y genera desconfianza) ni del máximo. Evitá cambiar el precio seguido: cada cambio brusco reinicia parte de la relevancia que fuiste ganando.",
+  },
+  {
+    title: "Activá Mercado Envíos (Full o Flex)",
+    detail:
+      "El tipo de envío pesa muchísimo. Full (ML almacena y despacha) es el estándar oro y aparece primero; Flex (despachás vos el mismo día) es la segunda mejor opción. Evitá dejar solo \"acordar con el comprador\": el algoritmo lo penaliza fuerte y baja tu visibilidad. El badge de envío gratis + cuotas sube el CTR.",
+  },
+  {
+    title: "Respondé las preguntas en menos de 1 hora",
+    detail:
+      "La velocidad de respuesta es señal de buen vendedor para el algoritmo y mejora la conversión: muchos compran apenas les respondés. Mantener una tasa de respuesta alta habilita el indicador \"responde rápido\". Tip: el bot de Pymela puede responder las preguntas de ML por vos automáticamente.",
+  },
+  {
+    title: "No pauses la publicación",
+    detail:
+      "Pausar y reactivar reinicia el historial de relevancia que la publicación fue acumulando (ventas, visitas, antigüedad). Si te quedás sin stock conviene, casi siempre, bajar el stock a un mínimo o gestionarlo en vez de pausar. Una publicación con historial continuo rankea mejor que una nueva idéntica.",
+  },
+  {
+    title: "Cuidá las primeras 48-72 horas",
+    detail:
+      "El algoritmo evalúa el desempeño inicial (visitas y ventas tempranas) para decidir cuánta exposición te da después. Para arrancar con impulso: compartí el link, asegurate de tener precio y fotos afinados desde el día uno, y considerá invertir un poco en Product Ads durante el lanzamiento para generar las primeras ventas que disparan el orgánico.",
+  },
 ];
 
 export function BotForm({ bot }: { bot: Bot }) {
@@ -59,6 +91,7 @@ export function BotForm({ bot }: { bot: Bot }) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [copiedSection, setCopiedSection] = useState<number | null>(null);
+  const [openChecklist, setOpenChecklist] = useState<number | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [scrapeUrl, setScrapeUrl] = useState("");
   const [scrapeLoading, setScrapeLoading] = useState(false);
@@ -488,12 +521,28 @@ export function BotForm({ bot }: { bot: Bot }) {
                 El texto es la mitad del trabajo — esto completa el resto del algoritmo de MercadoLibre.
               </p>
               <ul className="mt-3 space-y-1.5">
-                {ML_CHECKLIST.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-emerald-900">
-                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
-                    <span>{item}</span>
-                  </li>
-                ))}
+                {ML_CHECKLIST.map((item, i) => {
+                  const open = openChecklist === i;
+                  return (
+                    <li key={i} className="rounded-xl border border-emerald-100 bg-white/60">
+                      <button
+                        type="button"
+                        onClick={() => setOpenChecklist(open ? null : i)}
+                        aria-expanded={open}
+                        className="flex w-full items-start gap-2 px-3 py-2 text-left text-sm text-emerald-900"
+                      >
+                        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                        <span className="flex-1 font-medium">{item.title}</span>
+                        <ChevronDown className={cn("mt-0.5 h-4 w-4 shrink-0 text-emerald-500 transition-transform", open && "rotate-180")} />
+                      </button>
+                      {open && (
+                        <p className="px-3 pb-3 pl-8 text-xs leading-relaxed text-emerald-800/80">
+                          {item.detail}
+                        </p>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}

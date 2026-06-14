@@ -76,6 +76,67 @@ async function enforceMlTitleLimit(text: string): Promise<string> {
   return lines.join("\n");
 }
 
+// ── Limpieza defensiva del output de descripciones ───────────────────────────
+const EMOJI_RE = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{2705}\u{2728}]/u;
+const GLOBAL_HEADERS = /^(TÍTULO|TITULO|TÍTULOS ALTERNATIVOS|TITULOS ALTERNATIVOS|DESCRIPCIÓN|DESCRIPCION|FICHA TÉCNICA|FICHA TECNICA|PALABRAS CLAVE SEO)\b/;
+
+// Bullets de contenido (no son encabezados de sección).
+function isContentBullet(t: string): boolean {
+  return /^(✅|🔹|•|-|\d+[.)])/u.test(t);
+}
+
+// Encabezado de sección de la descripción: empieza con emoji y no es un bullet.
+const STARTS_WITH_EMOJI = new RegExp(`^${EMOJI_RE.source}`, "u");
+function isSectionHeader(t: string): boolean {
+  return !!t && !isContentBullet(t) && STARTS_WITH_EMOJI.test(t);
+}
+
+// ¿El encabezado trae su contenido en la misma línea? (ej: "🛡️ GARANTÍA — 12 meses")
+function headerHasInlineContent(line: string): boolean {
+  const s = line
+    .replace(new RegExp(EMOJI_RE.source, "gu"), " ")
+    .replace(/[A-ZÁÉÍÓÚÑ¿?¡!—:|]/g, " ");
+  return /[a-záéíóúñ0-9]{2,}/.test(s);
+}
+
+// Elimina encabezados de sección con emoji que quedaron sin contenido, filas de
+// ficha con marcadores residuales ([completar]/N/A/vacío) y colapsa líneas en blanco.
+function cleanMlOutput(text: string): string {
+  const lines = text.split("\n");
+  const drop = new Set<number>();
+
+  for (let i = 0; i < lines.length; i++) {
+    const t = lines[i].trim();
+    if (!t) continue;
+
+    // Encabezado de sección huérfano
+    if (isSectionHeader(t) && !GLOBAL_HEADERS.test(t) && !headerHasInlineContent(t)) {
+      let bodyHasContent = false;
+      let j = i + 1;
+      for (; j < lines.length; j++) {
+        const b = lines[j].trim();
+        if (!b) continue;
+        if (GLOBAL_HEADERS.test(b) || (isSectionHeader(b) && !isContentBullet(b))) break;
+        if (/[a-záéíóúñ0-9]/.test(b)) { bodyHasContent = true; break; }
+      }
+      if (!bodyHasContent) drop.add(i);
+      continue;
+    }
+
+    // Fila de ficha con marcador residual: "Atributo: [completar]" / "Atributo:" / "Atributo: N/A"
+    if (/^[\wÁÉÍÓÚÑáéíóúñ .]{2,30}:\s*(\[?completar\]?|n\/?a|-{1,2})?\s*$/i.test(lines[i]) && /:/.test(lines[i])) {
+      const val = lines[i].split(":").slice(1).join(":").trim();
+      if (!val || /^(\[?completar\]?|n\/?a|-{1,2})$/i.test(val)) drop.add(i);
+    }
+  }
+
+  return lines
+    .filter((_, i) => !drop.has(i))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export async function POST(req: NextRequest) {
   let body: { slug?: string; values?: Record<string, string> };
   try {
@@ -160,9 +221,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "La IA no devolvió respuesta" }, { status: 502 });
     }
 
-    // Garantía dura del límite de título de ML (solo aplica al formato con "TÍTULO").
+    // Garantía dura del límite de título de ML + limpieza de secciones vacías.
     if (slug === "descripciones") {
       text = await enforceMlTitleLimit(text);
+      text = cleanMlOutput(text);
     }
 
     return NextResponse.json({ text });

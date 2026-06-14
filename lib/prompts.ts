@@ -16,8 +16,8 @@ const BASE =
 // Guard compartido: el modelo solo puede usar los datos provistos por el usuario.
 const NO_INVENTAR =
   "REGLA DE FIDELIDAD: usá ÚNICAMENTE los datos que te dio el usuario. " +
-  "NUNCA inventes especificaciones, medidas, materiales, autonomía ni certificaciones que no estén en los datos. " +
-  "Si un dato importante falta, escribí [completar] en su lugar. ";
+  "NUNCA inventes especificaciones, medidas, materiales, autonomía, garantía ni certificaciones que no estén en los datos. " +
+  "Si un dato falta, OMITILO: no lo inventes ni dejes marcadores como [completar] o N/A en el texto final. ";
 
 function descripciones(v: Values): PromptSpec {
   const esInstagram = v.plataforma?.toLowerCase().includes("instagram") || v.plataforma?.toLowerCase().includes("facebook");
@@ -131,20 +131,19 @@ Luego 2-3 líneas que repiten la palabra clave principal y venden el beneficio c
 
 📌 CARACTERÍSTICAS TÉCNICAS — cada spec en línea propia con 🔹
 
-📦 CONTENIDO DEL PAQUETE — solo si hay datos de qué incluye; si no hay, omitir la sección
-
-🛡️ GARANTÍA — según los datos comerciales de arriba
-
-💳 PAGO Y 🚚 ENVÍO — según los datos comerciales de arriba (una sección breve combinada)
+${v.caracteristicas?.match(/incluye|caja|paquete|trae|viene con|kit|estuche|cable|cargador|manual/i) ? "📦 CONTENIDO DEL PAQUETE — listá SOLO lo que los datos dicen que incluye\n\n" : ""}${v.garantia?.trim() ? "🛡️ GARANTÍA — escribí en una línea la garantía indicada en los datos comerciales\n\n" : ""}💳 PAGO Y 🚚 ENVÍO — una sección breve combinada, según los datos comerciales de arriba
 
 ${v.condicion !== "Nuevo" ? "🔎 ESTADO DEL PRODUCTO — descripción honesta del estado real, marcas de uso y qué se entrega\n\n" : ""}❓ PREGUNTAS FRECUENTES — 3 a 5 preguntas típicas de compradores de este producto con su respuesta breve (1-2 líneas), basadas SOLO en los datos provistos
 
-Cierre de 1 línea invitando a consultar por el chat de la publicación]
+Cierre de 1 línea invitando a consultar por el chat de la publicación.
+
+IMPORTANTE: no escribas ningún encabezado de sección (con su emoji) si no tenés contenido real para esa sección. Mejor omitir la sección entera que dejar un emoji solo.]
 
 FICHA TÉCNICA
-[Los atributos para cargar en el formulario de ML, uno por línea, formato "Atributo: Valor".
-Incluí los que apliquen: Marca, Modelo, Color, Material, Medidas, Peso, Capacidad, Compatibilidad, etc.
-Solo con datos reales; si un atributo clave falta, ponelo igual con [completar]. Los atributos completos son el segundo factor de posicionamiento de ML.]
+[Atributos para cargar en el formulario de ML, uno por línea, formato "Atributo: Valor".
+Incluí ÚNICAMENTE los atributos para los que tenés un valor REAL en los datos (ej: Marca, Modelo, Color, Material, Conectividad, Capacidad, Compatibilidad, etc.).
+NO inventes valores y NO escribas filas con "[completar]", "N/A", "-" ni vacías: si no tenés el dato, no pongas esa fila.
+Al final, agregá UNA sola línea que empiece con "Atributos sugeridos para completar en ML: " seguida de 3-5 NOMBRES de atributos importantes para este tipo de producto que el vendedor debería cargar (solo los nombres separados por coma, sin valores). Los atributos completos son el segundo factor de posicionamiento de ML.]
 
 PALABRAS CLAVE SEO
 [12-15 términos de búsqueda reales separados por coma: con y sin tilde, singular y plural, técnicos y coloquiales, 2-3 long-tail.
