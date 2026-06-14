@@ -117,6 +117,8 @@ export type MlItem = {
   listing_type_id: string;
   attributes: Array<{ name: string; value_name: string }>;
   warranty?: string;
+  pictures?: Array<{ id: string; url: string; secure_url: string }>;
+  video_id?: string;
 };
 
 export async function getItem(itemId: string, token: string): Promise<MlItem> {

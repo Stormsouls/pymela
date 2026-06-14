@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { groq, DEFAULT_MODEL } from "@/lib/groq";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { getVerifiedMlUid } from "@/lib/ml-session";
+import { getConnectionByMlUserId, getFreshToken, getItem } from "@/lib/ml-api";
 
 export const runtime = "nodejs";
 
@@ -131,6 +133,54 @@ ${pageContent}`,
   return null;
 }
 
+// ─── MercadoLibre ────────────────────────────────────────────────────────────
+// ML bloquea el scraping anónimo. Con la cuenta conectada (OAuth) usamos la API
+// oficial: trae título, atributos, condición, garantía y fotos HD reales.
+async function handleMercadoLibre(req: NextRequest, url: string, parsed: URL): Promise<NextResponse> {
+  const slugFields = parseMlUrl(url);
+
+  // Extraer el item id del path: .../MLA-1904213156-... → MLA1904213156
+  const m = parsed.pathname.match(/(ML[A-Z])-?(\d+)/i);
+  const itemId = m ? `${m[1].toUpperCase()}${m[2]}` : "";
+
+  const uid = getVerifiedMlUid(req);
+  if (uid && itemId) {
+    try {
+      const conn = await getConnectionByMlUserId(uid);
+      if (conn) {
+        const token = await getFreshToken(conn);
+        const item = await getItem(itemId, token);
+        const attrs = (item.attributes ?? [])
+          .filter((a) => a.value_name)
+          .map((a) => `${a.name}: ${a.value_name}`)
+          .join("\n");
+        const condicion = item.condition === "used" ? "Usado"
+          : item.condition === "refurbished" ? "Reacondicionado" : "Nuevo";
+        const images = (item.pictures ?? []).map((p) => p.secure_url || p.url).filter(Boolean);
+        return NextResponse.json({
+          fields: {
+            producto: item.title || slugFields.producto,
+            categoria: "",
+            condicion,
+            caracteristicas: attrs,
+            marca: (item.attributes ?? []).find((a) => /marca/i.test(a.name))?.value_name ?? "",
+            garantia: item.warranty ?? "",
+          },
+          images,
+          hint: images.length ? "Datos y fotos traídos desde tu cuenta de ML. Revisalos antes de generar." : "Trajimos los datos desde tu cuenta de ML. Revisá las características.",
+        });
+      }
+    } catch { /* caer al fallback */ }
+  }
+
+  // Sin cuenta conectada: ML no deja extraer fotos. Guiamos al usuario.
+  return NextResponse.json({
+    fields: slugFields,
+    images: [],
+    hint: "MercadoLibre no permite traer las fotos de una publicación automáticamente. Para conseguirlas, pegá el link del proveedor o fabricante del producto (AliExpress, una tienda online, etc.) o conectá tu cuenta de ML.",
+  });
+}
+
 // ─── Handler ─────────────────────────────────────────────────────────────────
 // Acepta dos modos:
 //   { url }             → modo legacy: fetch en el servidor (solo para sites sin JS)
@@ -160,12 +210,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "URL no permitida" }, { status: 400 });
   }
 
-  // MercadoLibre: extraer del slug (API requiere auth)
-  if (url.includes("mercadolibre")) {
-    return NextResponse.json({
-      fields: parseMlUrl(url),
-      hint: "Completamos el título desde el link. Revisá y agregá las características.",
-    });
+  // MercadoLibre: bloquea el scraping anónimo (anti-bot). Si el usuario conectó
+  // su cuenta de ML, usamos la API oficial para traer datos + fotos HD reales.
+  if (url.includes("mercadolibre") || url.includes("mercadolivre")) {
+    return await handleMercadoLibre(req, url, parsed);
   }
 
   // ── Modo rápido: content ya viene del browser (Jina corrió en el cliente)

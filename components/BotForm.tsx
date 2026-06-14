@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Copy, Check, Download, FileDown, Loader2, Sparkles, RefreshCw, Link2, ScanSearch, ImageDown, Images, ChevronDown, ExternalLink } from "lucide-react";
+import { ArrowLeft, Copy, Check, Download, FileDown, Loader2, Sparkles, RefreshCw, Link2, ScanSearch, ImageDown, Images, ChevronDown, ExternalLink, Film, Globe } from "lucide-react";
 import type { Bot } from "@/lib/bots";
 import { BotIcon } from "./BotIcon";
 import { cn } from "@/lib/utils";
@@ -100,9 +100,13 @@ export function BotForm({ bot }: { bot: Bot }) {
   const [scrapeError, setScrapeError] = useState<string | null>(null);
   const [scrapeHint, setScrapeHint] = useState<string | null>(null);
   const [scrapedImages, setScrapedImages] = useState<string[]>([]);
+  const [scrapedVideos, setScrapedVideos] = useState<string[]>([]);
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [enfoqueIdx, setEnfoqueIdx] = useState(0);
   const [mlHost, setMlHost] = useState("www.mercadolibre.com.ar");
+  const [enrichLoading, setEnrichLoading] = useState(false);
+  const [enrichResult, setEnrichResult] = useState<{ atributos: { name: string; value: string }[]; fuentes: string[]; hint?: string } | null>(null);
+  const [enrichError, setEnrichError] = useState<string | null>(null);
 
   const { user, isAnon, signInWithEmail } = useAuth();
   const { saveGeneration } = useHistory();
@@ -137,10 +141,13 @@ export function BotForm({ bot }: { bot: Bot }) {
         if (jinaRes.ok) {
           const jinaData = await jinaRes.json();
           if (jinaData.code === 200 && jinaData.data) {
-            const { title = "", description = "", content = "", extractedImages = [] } = jinaData.data;
+            const { title = "", description = "", content = "", extractedImages = [], extractedVideos = [] } = jinaData.data;
             jinaContent = `Título: ${title}\nDescripción: ${description}\n\n${content}`.slice(0, 12000);
             if (Array.isArray(extractedImages) && extractedImages.length > 0) {
               setScrapedImages(extractedImages);
+            }
+            if (Array.isArray(extractedVideos) && extractedVideos.length > 0) {
+              setScrapedVideos(extractedVideos);
             }
           }
         }
@@ -156,6 +163,13 @@ export function BotForm({ bot }: { bot: Bot }) {
       if (!res.ok) throw new Error(data.error || "Error al scrapear");
       setValues((prev) => ({ ...prev, ...data.fields }));
       setScrapeHint(data.hint ?? null);
+      // Fotos/videos desde el servidor (ej. ML vía API oficial), además de los de Jina.
+      if (Array.isArray(data.images) && data.images.length > 0) {
+        setScrapedImages((prev) => Array.from(new Set([...data.images, ...prev])).slice(0, 30));
+      }
+      if (Array.isArray(data.videos) && data.videos.length > 0) {
+        setScrapedVideos((prev) => Array.from(new Set([...data.videos, ...prev])).slice(0, 3));
+      }
       // Si el link es de MercadoLibre, recordamos el dominio del país para el botón "Publicar".
       try {
         const host = new URL(normalizedUrl).hostname;
@@ -172,6 +186,8 @@ export function BotForm({ bot }: { bot: Bot }) {
   async function runGenerate(enfoque: number) {
     setError(null);
     setResult(null);
+    setEnrichResult(null);
+    setEnrichError(null);
     setLoading(true);
     try {
       // Para descripciones pasamos el enfoque para que "otra versión" cambie el ángulo SEO.
@@ -212,6 +228,27 @@ export function BotForm({ bot }: { bot: Bot }) {
     const next = enfoqueIdx + 1;
     setEnfoqueIdx(next);
     await runGenerate(next);
+  }
+
+  // Busca specs reales en la web para completar la ficha (sin inventar).
+  async function enrichFicha(fichaBody: string) {
+    setEnrichLoading(true);
+    setEnrichError(null);
+    setEnrichResult(null);
+    try {
+      const res = await fetch("/api/enrich", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ producto: values.producto, marca: values.marca, existing: fichaBody }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al buscar specs");
+      setEnrichResult(data);
+    } catch (err) {
+      setEnrichError(err instanceof Error ? err.message : "Error inesperado");
+    } finally {
+      setEnrichLoading(false);
+    }
   }
 
   async function copy() {
@@ -259,6 +296,8 @@ export function BotForm({ bot }: { bot: Bot }) {
   function reset() {
     setResult(null);
     setError(null);
+    setEnrichResult(null);
+    setEnrichError(null);
   }
 
   async function downloadImage(imgUrl: string, index: number) {
@@ -380,7 +419,34 @@ export function BotForm({ bot }: { bot: Bot }) {
               </button>
             ))}
           </div>
-          <p className="mt-2 text-xs text-zinc-400">Clic en cada foto para descargarla individualmente.</p>
+          <p className="mt-2 text-xs text-zinc-400">Clic en cada foto para descargarla. Subí 8-10 a tu publicación (la primera, fondo blanco).</p>
+        </div>
+      )}
+
+      {/* Galería de videos propios de la publicación */}
+      {scrapedVideos.length > 0 && !result && (
+        <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+          <p className="flex items-center gap-2 text-sm font-medium text-zinc-700">
+            <Film className="h-4 w-4 text-zinc-400" />
+            {scrapedVideos.length} video{scrapedVideos.length !== 1 ? "s" : ""} del producto
+          </p>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {scrapedVideos.map((vid, i) => (
+              <div key={i} className="overflow-hidden rounded-lg border border-zinc-200 bg-black">
+                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                <video src={vid} controls preload="metadata" className="aspect-video w-full bg-black" />
+                <a
+                  href={`/api/img?url=${encodeURIComponent(vid)}&filename=${encodeURIComponent(`${bot.slug}-video-${i + 1}.mp4`)}`}
+                  download
+                  className="flex items-center justify-center gap-1.5 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-700"
+                >
+                  <Download className="h-3 w-3" />
+                  Descargar video
+                </a>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-zinc-400">Un video corto (menos de 60 s) sube la conversión y el posicionamiento.</p>
         </div>
       )}
 
@@ -494,6 +560,60 @@ export function BotForm({ bot }: { bot: Bot }) {
                     <pre className="mt-2 whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-zinc-800">
                       {s.body}
                     </pre>
+
+                    {/* Enriquecer ficha con specs reales de la web */}
+                    {s.title === "FICHA TÉCNICA" && (
+                      <div className="mt-3 border-t border-zinc-200 pt-3">
+                        <button
+                          type="button"
+                          onClick={() => enrichFicha(s.body)}
+                          disabled={enrichLoading}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                        >
+                          {enrichLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe className="h-3.5 w-3.5" />}
+                          {enrichLoading ? "Buscando en la web…" : "Buscar más specs en internet"}
+                        </button>
+                        <p className="mt-1 text-[11px] text-zinc-400">Busca datos reales en la web. Verificá siempre que coincidan con tu producto antes de publicar.</p>
+
+                        {enrichError && <p className="mt-2 text-xs text-rose-600">{enrichError}</p>}
+
+                        {enrichResult && enrichResult.atributos.length > 0 && (
+                          <div className="mt-3 rounded-xl border border-indigo-100 bg-white p-3">
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs font-semibold text-indigo-700">{enrichResult.atributos.length} specs encontradas en la web</p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const txt = enrichResult.atributos.map((a) => `${a.name}: ${a.value}`).join("\n");
+                                  navigator.clipboard.writeText(txt).catch(() => {});
+                                }}
+                                className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-[11px] font-medium text-zinc-600 hover:bg-zinc-50"
+                              >
+                                <Copy className="h-3 w-3" /> Copiar
+                              </button>
+                            </div>
+                            <ul className="mt-2 space-y-1">
+                              {enrichResult.atributos.map((a, k) => (
+                                <li key={k} className="text-sm text-zinc-800">
+                                  <span className="font-medium">{a.name}:</span> {a.value}
+                                </li>
+                              ))}
+                            </ul>
+                            {enrichResult.fuentes.length > 0 && (
+                              <p className="mt-2 text-[11px] text-zinc-400">
+                                Fuentes:{" "}
+                                {enrichResult.fuentes.map((f, k) => (
+                                  <a key={k} href={f} target="_blank" rel="noopener noreferrer" className="mr-1 underline hover:text-zinc-600">[{k + 1}]</a>
+                                ))}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {enrichResult && enrichResult.atributos.length === 0 && (
+                          <p className="mt-2 text-xs text-amber-600">{enrichResult.hint ?? "No encontramos specs confiables en la web. Completá los atributos manualmente."}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
