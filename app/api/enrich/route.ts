@@ -3,7 +3,7 @@ import { groq, DEFAULT_MODEL } from "@/lib/groq";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 function safeDecode(s: string): string {
   try { return decodeURIComponent(s); } catch { return s; }
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Leer la primera fuente confiable para tener contenido rico de specs.
-  const pageContent = fuentes.length ? (await jinaRead(fuentes[0], 14))?.content ?? "" : "";
+  const pageContent = fuentes.length ? (await jinaRead(fuentes[0], 20, "markdown"))?.content ?? "" : "";
   const corpus = [
     ddg?.content ? `RESULTADOS DE BÚSQUEDA:\n${ddg.content.slice(0, 4000)}` : "",
     pageContent ? `FUENTE ${fuentes[0]}:\n${pageContent.slice(0, 6000)}` : "",

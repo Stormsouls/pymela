@@ -1,8 +1,9 @@
-// Edge runtime: hasta 30s de timeout (vs 10s de serverless en Vercel Hobby).
-// Proxy a Jina Reader: evita CORS del browser y el límite de serverless.
+// Proxy a Jina Reader: evita CORS del browser y centraliza la API key.
+// nodejs + maxDuration alto: el render de Jina puede tardar bastante.
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 // MercadoLibre (mlstatic) sirve la misma foto en muchos tamaños. Llevamos cada
 // imagen a su versión más grande (2X + sufijo -O) para que sirvan de portada.
@@ -98,18 +99,18 @@ export async function GET(req: Request) {
   }
 
   try {
-    // Con API key, Jina habilita rendering de SPAs y más cuota. Sin key, el tier
-    // anónimo suele devolver contenido vacío para sitios con JS (degradado).
+    // X-Return-Format "markdown" es clave: con "text" Jina devuelve contenido vacío
+    // para muchos sitios. La API key sube la cuota y mejora el acceso.
     const apiKey = process.env.JINA_API_KEY;
     const res = await fetch(`https://r.jina.ai/${url}`, {
       headers: {
         Accept: "application/json",
-        "X-Return-Format": "text",
+        "X-Return-Format": "markdown",
         "X-With-Images-Summary": "true",
-        "X-Timeout": "25",
-        ...(apiKey ? { Authorization: `Bearer ${apiKey}`, "X-Engine": "browser" } : {}),
+        "X-Timeout": "45",
+        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
       },
-      signal: AbortSignal.timeout(28000),
+      signal: AbortSignal.timeout(55000),
     });
 
     if (!res.ok) {
