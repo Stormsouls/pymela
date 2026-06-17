@@ -107,13 +107,26 @@ Auditoría SEO ML 2026 + reescritura completa. Deployado a prod y verificado end
   página vacía de 256 chars). Solución: si hay cookie OAuth (`getVerifiedMlUid`), trae
   datos + fotos HD vía API oficial (getItem); si no, hint para pegar link del proveedor
   o conectar la cuenta.
-- ⚠️ **PENDIENTE — JINA_API_KEY**: Jina restringió su tier anónimo. Desde las IPs de
-  datacenter de Vercel devuelve contenido vacío (status 20000) → enrich y scraping de
-  fotos de sitios NO funcionan en prod sin key. El código YA soporta `JINA_API_KEY`
-  (Authorization Bearer + X-Engine browser) en /api/jina y /api/enrich; falta crear la
-  key gratis en jina.ai/reader y cargarla como env var en Vercel. En local (IP
-  residencial) el enrich funcionó (13 atributos iPhone + 3 fuentes).
+- ✅ **JINA_API_KEY** en Vercel y funcionando. /api/enrich ahora usa Jina Search
+  (`s.jina.ai`) en lugar de DuckDuckGo HTML (que estaba bloqueado desde datacenter Vercel).
+  Verificado en prod: 15 atributos + 3 fuentes para Samsung Galaxy A54.
+  Nota: env var tenía BOM (U+FEFF) que rompía el header HTTP → recargada con `printf '%s'`
+  y stripeo defensivo en código (`getJinaKey()` en `app/api/enrich/route.ts`).
 - Para fotos de ML específicamente: conectar la cuenta en /conectar-ml (OAuth).
+
+## Bot descripciones ML — fixes UX/producción (2026-06-17)
+- **Filtrado de imágenes irrelevantes** (`app/api/jina/route.ts`): `BLOCKED_HOSTS` (ads/tracking),
+  `EXCLUDE_KEYWORDS` (iconos/logos/banderas/badges/payments/sociales), exclusión SVG, check de
+  dimensiones en filename (WxH < 200px = icono), alt-text matching, y match de hostname exacto/subdominio
+  (evita falso positivo: `"licdn.com"` bloqueaba `"alicdn.com"` vía substring).
+- **`maxDuration = 60`** añadido a `/api/scrape` y `/api/generate` → ya estaba en jina y enrich.
+  Previene timeout de Vercel (~10s default) en llamadas lentas a Groq/Jina → causaba respuesta
+  vacía que el cliente no podía parsear.
+- **`safeJson()` helper** en `components/BotForm.tsx`: reemplaza `res.json()` directo en las 3
+  llamadas (scrape/generate/enrich). `res.text()` + `JSON.parse()` manual con mensajes de error
+  en español si el body viene vacío o cortado.
+- **Galerías post-generación**: imágenes y video movidos del bloque `!result` (visible mientras
+  está el form) al bloque `result && (...)` (visible sólo después de generar la descripción).
 
 ## Estado actual (al cierre — 2026-05-31)
 ✅ Scaffolding Next.js 16 + Tailwind v4 + deps instaladas

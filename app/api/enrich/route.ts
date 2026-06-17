@@ -5,15 +5,16 @@ import { rateLimit, getClientIp } from "@/lib/rate-limit";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-function safeDecode(s: string): string {
-  try { return decodeURIComponent(s); } catch { return s; }
+// BOM y zero-width chars se cuelan al cargar env vars vía pipe — los stripeamos.
+function getJinaKey(): string | undefined {
+  return process.env.JINA_API_KEY?.replace(/[﻿​-‍]/g, "").trim() || undefined;
 }
 
-// Lee una URL con Jina Reader (gratis, sin API key) y devuelve su contenido.
+// Lee una URL con Jina Reader y devuelve su contenido.
 // format "markdown" conserva los links (útil para leer una página de resultados).
 async function jinaRead(url: string, timeoutSec: number, format: "text" | "markdown" = "text"): Promise<{ title: string; content: string } | null> {
   try {
-    const apiKey = process.env.JINA_API_KEY;
+    const apiKey = getJinaKey();
     const res = await fetch(`https://r.jina.ai/${url}`, {
       headers: {
         Accept: "application/json",
@@ -48,33 +49,44 @@ export async function POST(req: NextRequest) {
   const existing = (body.existing ?? "").trim().slice(0, 2000);
   if (!producto) return NextResponse.json({ error: "Falta el producto" }, { status: 400 });
 
-  // ── Buscar en la web con Jina Reader (gratis) sobre DuckDuckGo HTML ──────────
+  // ── Buscar specs con Jina Search (s.jina.ai — requiere JINA_API_KEY) ──────────
   const query = `${marca} ${producto} especificaciones ficha técnica`.trim();
-  const ddg = await jinaRead(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, 12, "markdown");
-
+  const apiKey = getJinaKey();
   const fuentes: string[] = [];
-  if (ddg?.content) {
-    const seenHost = new Set<string>();
-    for (const m of ddg.content.matchAll(/https?:\/\/[^\s"')\]]+/g)) {
-      // DuckDuckGo envuelve los links en /l/?uddg=<url-encodeada>
-      const uddg = m[0].match(/[?&]uddg=([^&]+)/);
-      const url = uddg ? safeDecode(uddg[1]) : m[0];
-      let host: string;
-      try { host = new URL(url).hostname.replace(/^www\./, ""); } catch { continue; }
-      if (/duckduckgo\.com|jina\.ai|bing\.|google\./i.test(host)) continue;
-      if (seenHost.has(host)) continue;
-      seenHost.add(host);
-      fuentes.push(url);
-      if (fuentes.length >= 3) break;
-    }
+  let searchSnippets = "";
+
+  if (apiKey) {
+    try {
+      const sr = await fetch(`https://s.jina.ai/${encodeURIComponent(query)}`, {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${apiKey}`,
+          "X-Timeout": "25",
+        },
+        signal: AbortSignal.timeout(28000),
+      });
+      if (sr.ok) {
+        const data = await sr.json();
+        if (Array.isArray(data?.data)) {
+          for (const r of data.data.slice(0, 5)) {
+            if (r.url && !fuentes.includes(r.url)) fuentes.push(r.url);
+            if (r.content && r.content.length > 200) {
+              searchSnippets += `FUENTE ${r.url}:\n${r.content.slice(0, 3000)}\n\n---\n\n`;
+            }
+            if (fuentes.length >= 3 && searchSnippets.length > 5000) break;
+          }
+        }
+      }
+    } catch { /* sin resultados */ }
   }
 
-  // Leer la primera fuente confiable para tener contenido rico de specs.
-  const pageContent = fuentes.length ? (await jinaRead(fuentes[0], 20, "markdown"))?.content ?? "" : "";
-  const corpus = [
-    ddg?.content ? `RESULTADOS DE BÚSQUEDA:\n${ddg.content.slice(0, 4000)}` : "",
-    pageContent ? `FUENTE ${fuentes[0]}:\n${pageContent.slice(0, 6000)}` : "",
-  ].filter(Boolean).join("\n\n---\n\n").slice(0, 9000);
+  // Fallback: leer la primera fuente si Jina Search no trajo contenido.
+  if (!searchSnippets && fuentes.length) {
+    const page = await jinaRead(fuentes[0], 20, "markdown");
+    if (page?.content) searchSnippets = `FUENTE ${fuentes[0]}:\n${page.content.slice(0, 6000)}`;
+  }
+
+  const corpus = searchSnippets.slice(0, 9000);
 
   if (!corpus || corpus.replace(/\s/g, "").length < 150) {
     return NextResponse.json({ atributos: [], fuentes: [], hint: "No encontramos fichas confiables en la web para este producto. Completá los atributos manualmente." });

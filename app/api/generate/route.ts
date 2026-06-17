@@ -6,6 +6,7 @@ import { checkAndRecordGeneration } from "@/lib/supabase-server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const ML_TITLE_MAX = 60;
 

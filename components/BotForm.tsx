@@ -23,6 +23,18 @@ const SECTION_HEADERS = [
   "HASHTAGS",
 ];
 
+// Evita que un timeout de función serverless (body vacío/truncado) reviente con
+// el críptico "Unexpected end of JSON input" — lo convertimos en un mensaje claro.
+async function safeJson(res: Response): Promise<any> {
+  const raw = await res.text();
+  if (!raw) throw new Error("El servidor no respondió a tiempo. Probá de nuevo en unos segundos.");
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error("El servidor tardó demasiado en responder. Probá de nuevo en unos segundos.");
+  }
+}
+
 type Section = { title: string; body: string };
 
 function parseSections(text: string): Section[] {
@@ -159,7 +171,7 @@ export function BotForm({ bot }: { bot: Bot }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: normalizedUrl, content: jinaContent }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Error al scrapear");
       setValues((prev) => ({ ...prev, ...data.fields }));
       setScrapeHint(data.hint ?? null);
@@ -197,7 +209,7 @@ export function BotForm({ bot }: { bot: Bot }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug: bot.slug, values: payload }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Error al generar");
       setResult(data.text);
       bumpUses();
@@ -241,7 +253,7 @@ export function BotForm({ bot }: { bot: Bot }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ producto: values.producto, marca: values.marca, existing: fichaBody }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Error al buscar specs");
       setEnrichResult(data);
     } catch (err) {
@@ -376,77 +388,6 @@ export function BotForm({ bot }: { bot: Bot }) {
           {scrapeHint && (
             <p className="mt-2 text-xs text-amber-600">⚠ {scrapeHint}</p>
           )}
-        </div>
-      )}
-
-      {/* Galería de imágenes scrapeadas */}
-      {scrapedImages.length > 0 && !result && (
-        <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-          <div className="flex items-center justify-between">
-            <p className="flex items-center gap-2 text-sm font-medium text-zinc-700">
-              <Images className="h-4 w-4 text-zinc-400" />
-              {scrapedImages.length} foto{scrapedImages.length !== 1 ? "s" : ""} encontrada{scrapedImages.length !== 1 ? "s" : ""}
-            </p>
-            <button
-              type="button"
-              onClick={downloadAllImages}
-              disabled={downloadingAll}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
-            >
-              {downloadingAll ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImageDown className="h-3 w-3" />}
-              {downloadingAll ? "Descargando…" : "Descargar todas"}
-            </button>
-          </div>
-          <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-6">
-            {scrapedImages.map((img, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => downloadImage(img, i)}
-                title="Clic para descargar"
-                className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-200 bg-white"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={img}
-                  alt={`Foto ${i + 1}`}
-                  className="h-full w-full object-cover transition-opacity group-hover:opacity-70"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                />
-                <span className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
-                  <Download className="h-4 w-4 text-zinc-700" />
-                </span>
-              </button>
-            ))}
-          </div>
-          <p className="mt-2 text-xs text-zinc-400">Clic en cada foto para descargarla. Subí 8-10 a tu publicación (la primera, fondo blanco).</p>
-        </div>
-      )}
-
-      {/* Galería de videos propios de la publicación */}
-      {scrapedVideos.length > 0 && !result && (
-        <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-          <p className="flex items-center gap-2 text-sm font-medium text-zinc-700">
-            <Film className="h-4 w-4 text-zinc-400" />
-            {scrapedVideos.length} video{scrapedVideos.length !== 1 ? "s" : ""} del producto
-          </p>
-          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {scrapedVideos.map((vid, i) => (
-              <div key={i} className="overflow-hidden rounded-lg border border-zinc-200 bg-black">
-                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                <video src={vid} controls preload="metadata" className="aspect-video w-full bg-black" />
-                <a
-                  href={`/api/img?url=${encodeURIComponent(vid)}&filename=${encodeURIComponent(`${bot.slug}-video-${i + 1}.mp4`)}`}
-                  download
-                  className="flex items-center justify-center gap-1.5 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-700"
-                >
-                  <Download className="h-3 w-3" />
-                  Descargar video
-                </a>
-              </div>
-            ))}
-          </div>
-          <p className="mt-2 text-xs text-zinc-400">Un video corto (menos de 60 s) sube la conversión y el posicionamiento.</p>
         </div>
       )}
 
@@ -679,6 +620,76 @@ export function BotForm({ bot }: { bot: Bot }) {
           </div>
 
           {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
+
+          {/* Fotos y video del producto — se ofrecen después de la descripción */}
+          {scrapedImages.length > 0 && (
+            <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              <div className="flex items-center justify-between">
+                <p className="flex items-center gap-2 text-sm font-medium text-zinc-700">
+                  <Images className="h-4 w-4 text-zinc-400" />
+                  {scrapedImages.length} foto{scrapedImages.length !== 1 ? "s" : ""} encontrada{scrapedImages.length !== 1 ? "s" : ""}
+                </p>
+                <button
+                  type="button"
+                  onClick={downloadAllImages}
+                  disabled={downloadingAll}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+                >
+                  {downloadingAll ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImageDown className="h-3 w-3" />}
+                  {downloadingAll ? "Descargando…" : "Descargar todas"}
+                </button>
+              </div>
+              <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-6">
+                {scrapedImages.map((img, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => downloadImage(img, i)}
+                    title="Clic para descargar"
+                    className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-200 bg-white"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={img}
+                      alt={`Foto ${i + 1}`}
+                      className="h-full w-full object-cover transition-opacity group-hover:opacity-70"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                    <span className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
+                      <Download className="h-4 w-4 text-zinc-700" />
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-zinc-400">Clic en cada foto para descargarla. Subí 8-10 a tu publicación (la primera, fondo blanco).</p>
+            </div>
+          )}
+
+          {scrapedVideos.length > 0 && (
+            <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              <p className="flex items-center gap-2 text-sm font-medium text-zinc-700">
+                <Film className="h-4 w-4 text-zinc-400" />
+                {scrapedVideos.length} video{scrapedVideos.length !== 1 ? "s" : ""} del producto
+              </p>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {scrapedVideos.map((vid, i) => (
+                  <div key={i} className="overflow-hidden rounded-lg border border-zinc-200 bg-black">
+                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                    <video src={vid} controls preload="metadata" className="aspect-video w-full bg-black" />
+                    <a
+                      href={`/api/img?url=${encodeURIComponent(vid)}&filename=${encodeURIComponent(`${bot.slug}-video-${i + 1}.mp4`)}`}
+                      download
+                      className="flex items-center justify-center gap-1.5 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-700"
+                    >
+                      <Download className="h-3 w-3" />
+                      Descargar video
+                    </a>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-zinc-400">Un video corto (menos de 60 s) sube la conversión y el posicionamiento.</p>
+            </div>
+          )}
 
           {/* Checklist de posicionamiento — solo descripciones para ML */}
           {bot.slug === "descripciones" && (values.plataforma ?? "").includes("Mercado") && (

@@ -22,6 +22,29 @@ function dedupeKey(url: string): string {
   return url.split("?")[0].toLowerCase();
 }
 
+// Dominios de ads/tracking/widgets de terceros — nunca son fotos de producto.
+const BLOCKED_HOSTS = [
+  "doubleclick.net", "googlesyndication.com", "googletagmanager.com",
+  "google-analytics.com", "adservice.google.com", "amazon-adsystem.com",
+  "criteo.com", "criteo.net", "taboola.com", "outbrain.com",
+  "scorecardresearch.com", "licdn.com", "gravatar.com", "s.w.org",
+  "fbcdn.net", "connect.facebook.net",
+];
+
+// Palabras que delatan iconos, logos, banderas o badges — nunca son fotos de producto.
+const EXCLUDE_KEYWORDS = [
+  "favicon", "sprite", "pixel", "tracking", "badge", "1x1", "placeholder",
+  "blank", "_ttd_", "logo", "icon", "ico_", "flag", "bandera", "avatar",
+  "emoji", "payment", "visa", "mastercard", "paypal", "mercadopago", "amex",
+  "diners", "social-", "whatsapp", "facebook", "instagram", "twitter",
+  "tiktok", "youtube-icon", "share-", "btn-", "button", "arrow-", "chevron",
+  "close-", "menu-", "hamburger", "search-icon", "cart-icon", "user-icon",
+  "star-icon", "rating-", "qr-code", "qrcode", "barcode", "captcha",
+  "spinner", "loading", "loader", "banner-ad", "advert", "cookie-",
+  "gdpr", "ssl-", "trust-badge", "seal-", "stamp-", "watermark",
+  "lang-switch", "language-", "selector-",
+];
+
 // Extrae URLs de imágenes del contenido markdown de Jina.
 // Prioriza fotos del producto (mismo CDN/producto), las normaliza a alta resolución
 // y deduplica para maximizar la RELEVANCIA por sobre la cantidad.
@@ -30,8 +53,8 @@ function extractImages(content: string, imagesData: Record<string, unknown> | nu
   const primary: string[] = []; // fotos del producto (mlstatic / CDN de la propia publicación)
   const secondary: string[] = []; // otras imágenes plausibles de producto
 
-  const consider = (raw: string) => {
-    if (!isProductImage(raw)) return;
+  const consider = (raw: string, alt = "") => {
+    if (!isProductImage(raw, alt)) return;
     const url = upscaleMlImage(raw);
     const key = dedupeKey(url);
     if (seenKey.has(key)) return;
@@ -40,17 +63,19 @@ function extractImages(content: string, imagesData: Record<string, unknown> | nu
     else secondary.push(url);
   };
 
-  // 1. imagesData (X-With-Images-Summary) — la fuente más confiable
+  // 1. imagesData (X-With-Images-Summary): { url: altText } — la fuente más confiable
   if (imagesData && typeof imagesData === "object") {
-    for (const url of Object.keys(imagesData)) consider(url);
+    for (const [url, alt] of Object.entries(imagesData)) consider(url, String(alt ?? ""));
   }
-  // 2. markdown ![alt](url)
-  for (const m of content.matchAll(/!\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/g)) consider(m[1]);
+  // 2. markdown ![alt](url) — el alt sirve para filtrar iconos/logos
+  for (const m of content.matchAll(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g)) consider(m[2], m[1]);
   // 3. URLs de imagen sueltas
   for (const m of content.matchAll(/https?:\/\/[^\s"'<>)]+\.(?:jpg|jpeg|png|webp|avif)(?:\?[^\s"'<>)]*)?/gi)) consider(m[0]);
 
-  // Primero las del producto; completamos con secundarias solo si hacen falta. Máx 30.
-  return [...primary, ...secondary].slice(0, 30);
+  // Si hay fotos confiables del propio producto (CDN conocido), priorizamos esas.
+  // Si no, las "secondary" son la única señal disponible — se limitan más para no
+  // diluir la relevancia con imágenes sueltas de la página (iconos sin filtrar, etc.).
+  return primary.length > 0 ? [...primary, ...secondary].slice(0, 30) : secondary.slice(0, 15);
 }
 
 // Extrae videos PROPIOS de la publicación (descargables): mp4/webm directos y
@@ -64,12 +89,22 @@ function extractVideos(content: string): string[] {
   return vids.slice(0, 3);
 }
 
-function isProductImage(url: string): boolean {
+function isProductImage(url: string, alt = ""): boolean {
   const lower = url.toLowerCase();
-  // Descartar logos, iconos, tracking pixels, SVGs
-  const skip = ["favicon", "sprite", "pixel", "tracking", "badge", ".svg",
-    "1x1", "placeholder", "blank", "_ttd_", "logo._", "error/"];
-  if (skip.some((s) => lower.includes(s))) return false;
+  const altLower = alt.toLowerCase();
+  // Match por hostname exacto/subdominio (no substring crudo): evita que "alicdn.com"
+  // (CDN legítimo de AliExpress) caiga por contener "licdn.com" (CDN de LinkedIn).
+  let host = "";
+  try { host = new URL(url).hostname.toLowerCase(); } catch { /* url relativa */ }
+  if (BLOCKED_HOSTS.some((h) => host === h || host.endsWith("." + h))) return false;
+  if (EXCLUDE_KEYWORDS.some((k) => lower.includes(k) || altLower.includes(k))) return false;
+  if (/\.svg(\?|_|$)/i.test(lower)) return false;
+  // Dimensiones explícitas en el nombre de archivo (ej: icon-32x32.png) → es una miniatura.
+  const dim = lower.match(/(\d{2,4})x(\d{2,4})(?:\.|_|-|\?|$)/);
+  if (dim) {
+    const w = parseInt(dim[1], 10), h = parseInt(dim[2], 10);
+    if (w < 200 && h < 200) return false;
+  }
   // Aceptar si tiene extensión de imagen conocida o URL de CDN de imagen
   const hasImgExt = /\.(jpg|jpeg|png|webp|avif|bmp)(\?|_|$)/i.test(lower);
   const isImgCdn = /\/(img|image|images|photo|photos|media|product|item|goods)\//i.test(lower);

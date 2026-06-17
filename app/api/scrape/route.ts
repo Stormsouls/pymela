@@ -5,6 +5,7 @@ import { getVerifiedMlUid } from "@/lib/ml-session";
 import { getConnectionByMlUserId, getFreshToken, getItem } from "@/lib/ml-api";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 // Bloquea hosts que apunten a la red interna (evita SSRF al fetchear URLs del usuario).
 function isPrivateHost(host: string): boolean {
@@ -102,28 +103,36 @@ async function fetchViaJina(url: string): Promise<string | null> {
 
 // ─── Extracción con Groq ─────────────────────────────────────────────────────
 async function extractWithGroq(pageContent: string): Promise<Record<string, string> | null> {
-  const completion = await groq.chat.completions.create({
-    model: DEFAULT_MODEL,
-    temperature: 0.1,
-    max_tokens: 800,
-    messages: [
-      {
-        role: "system",
-        content:
-          "Sos un extractor de datos de productos. Tu única tarea es leer contenido de una página de producto y devolver un JSON. No inventes datos. Si un campo no está disponible, devolvé cadena vacía.",
-      },
-      {
-        role: "user",
-        content: `Extraé los datos y devolvé SOLO un JSON válido con esta estructura (sin texto extra, sin markdown):
+  let raw = "";
+  try {
+    const completion = await groq.chat.completions.create({
+      model: DEFAULT_MODEL,
+      temperature: 0.1,
+      max_tokens: 800,
+      messages: [
+        {
+          role: "system",
+          content:
+            "Sos un extractor de datos de productos. Tu única tarea es leer contenido de una página de producto y devolver un JSON. No inventes datos. Si un campo no está disponible, devolvé cadena vacía.",
+        },
+        {
+          role: "user",
+          content: `Extraé los datos y devolvé SOLO un JSON válido con esta estructura (sin texto extra, sin markdown):
 {"producto":"nombre completo","categoria":"categoría","condicion":"Nuevo|Usado|Reacondicionado","caracteristicas":"características separadas por comas o saltos de línea"}
 
 Contenido:
 ${pageContent}`,
-      },
-    ],
-  });
+        },
+      ],
+    }, { timeout: 25000 });
+    raw = completion.choices[0]?.message?.content?.trim() ?? "";
+  } catch {
+    // Groq caído / rate-limit de hora pico / timeout → devolvemos null y el handler
+    // cae al fallback (nombre del slug). NUNCA propagar: un throw acá hace que la
+    // función serverless muera con body vacío → el cliente ve "no respondió a tiempo".
+    return null;
+  }
 
-  const raw = completion.choices[0]?.message?.content?.trim() ?? "";
   try {
     const direct = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
     try { return JSON.parse(direct); } catch { /* seguir */ }
