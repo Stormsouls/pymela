@@ -128,6 +128,20 @@ Auditoría SEO ML 2026 + reescritura completa. Deployado a prod y verificado end
 - **Galerías post-generación**: imágenes y video movidos del bloque `!result` (visible mientras
   está el form) al bloque `result && (...)` (visible sólo después de generar la descripción).
 
+## Bot descripciones ML — fix "El servidor no respondió a tiempo" (2026-06-17)
+- **Causa raíz**: al pegar un link, `/api/scrape` con `content:""` hace fetch server-side de
+  la página (ej. Fravega/SPAs pesadas), obtiene >200 chars y llamaba a `extractWithGroq`
+  **sin try/catch**. Cuando Groq fallaba (rate-limit de hora pico, etc.) la excepción no se
+  capturaba → la función serverless moría con **HTTP 500 body vacío** → `safeJson()` en el
+  cliente tiraba "El servidor no respondió a tiempo".
+- **Fix** (`app/api/scrape/route.ts`): `extractWithGroq` ahora envuelve el call a Groq en
+  try/catch (devuelve `null` ante cualquier throw) + `timeout: 25000` defensivo. El handler
+  ya manejaba `null` → cae al nombre del slug + hint, devolviendo **200 con body válido**.
+  Verificado en prod: el repro (fravega + content vacío) pasó de 500 size 0 a 200 estable x4.
+- `/api/generate` ya tenía su Groq en try/catch (502 con body) — no afectado.
+- Nota UX pendiente: `/api/jina` puede tardar ~45-55s en páginas SPA pesadas (X-Timeout 45 /
+  AbortSignal 55s). No rompe (el error ya no aparece) pero es un wait largo; evaluar bajarlo.
+
 ## Estado actual (al cierre — 2026-05-31)
 ✅ Scaffolding Next.js 16 + Tailwind v4 + deps instaladas
 ✅ Registro de 5 bots + prompts LatAm + form dinámico
