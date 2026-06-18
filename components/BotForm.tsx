@@ -164,6 +164,8 @@ export function BotForm({ bot }: { bot: Bot }) {
       .catch(() => null);
 
     let firstFields: Record<string, string> = {};
+    let firstHint: string | null = null;
+    let firstWeak = false; // true = el primer scrape no logró traer características
     try {
       // Campos al instante: scrape sin esperar a Jina. ML usa su API oficial; el resto,
       // fetch server-side + nombre del slug. Devuelve siempre rápido (~1-6s).
@@ -175,8 +177,13 @@ export function BotForm({ bot }: { bot: Bot }) {
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Error al scrapear");
       firstFields = data.fields ?? {};
+      firstHint = data.hint ?? null;
+      firstWeak = !((firstFields.caracteristicas ?? "").trim());
       setValues((prev) => ({ ...prev, ...firstFields }));
-      setScrapeHint(data.hint ?? null);
+      // No-ML sin specs: NO mostramos el hint negativo todavía. Jina puede completar la
+      // ficha en segundo plano; el indicador "Buscando…" cubre la espera. Si tampoco lo
+      // logra, el hint se muestra recién al final.
+      setScrapeHint(!isML && firstWeak ? null : firstHint);
       // Fotos/videos desde el servidor (ej. ML vía API oficial).
       if (Array.isArray(data.images) && data.images.length > 0) {
         setScrapedImages((prev) => Array.from(new Set([...data.images, ...prev])).slice(0, 30));
@@ -191,9 +198,10 @@ export function BotForm({ bot }: { bot: Bot }) {
       return;
     }
 
-    // Campos listos → formulario desbloqueado. Las fotos siguen cargando en segundo plano.
+    // Campos listos → formulario desbloqueado. Las fotos/datos siguen cargando en segundo plano.
     setScrapeLoading(false);
     setMediaLoading(true);
+    let finalHint = firstHint;
     try {
       const jinaData = await jinaPromise;
       if (jinaData && jinaData.code === 200 && jinaData.data) {
@@ -204,9 +212,9 @@ export function BotForm({ bot }: { bot: Bot }) {
         if (Array.isArray(extractedVideos) && extractedVideos.length > 0) {
           setScrapedVideos((prev) => Array.from(new Set([...prev, ...extractedVideos])).slice(0, 3));
         }
-        // No-ML con contenido rico: reextraemos la ficha y mejoramos los campos que el
-        // usuario no editó (el nombre del slug suele venir, pero no las características).
-        if (!isML && typeof content === "string" && content.length > 800) {
+        // No-ML que quedó sin specs: reextraemos la ficha con el contenido (renderizado) de
+        // Jina y mejoramos los campos que el usuario no editó (slug/vacío → valor real).
+        if (!isML && firstWeak && typeof content === "string" && content.trim().length > 300) {
           const jinaContent = `Título: ${title}\nDescripción: ${description}\n\n${content}`.slice(0, 12000);
           const res2 = await fetch("/api/scrape", {
             method: "POST",
@@ -224,11 +232,17 @@ export function BotForm({ bot }: { bot: Bot }) {
               }
               return merged;
             });
+            const gotSpecs = !!((data2.fields.caracteristicas ?? "").trim() || (data2.fields.categoria ?? "").trim());
+            finalHint = gotSpecs
+              ? "Datos del link cargados. Revisá que sean correctos antes de generar."
+              : (data2.hint ?? firstHint);
           }
         }
       }
-    } catch { /* fotos best-effort: si Jina falla, los campos ya están */ }
+    } catch { /* best-effort: si Jina falla, los campos del primer scrape ya están */ }
     finally {
+      // Hint definitivo: para no-ML sin specs reflejamos el resultado de la reextracción.
+      if (!isML && firstWeak) setScrapeHint(finalHint);
       setMediaLoading(false);
     }
   }
