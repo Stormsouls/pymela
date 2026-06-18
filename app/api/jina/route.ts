@@ -142,10 +142,10 @@ export async function GET(req: Request) {
         Accept: "application/json",
         "X-Return-Format": "markdown",
         "X-With-Images-Summary": "true",
-        "X-Timeout": "45",
+        "X-Timeout": "30",
         ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
       },
-      signal: AbortSignal.timeout(55000),
+      signal: AbortSignal.timeout(35000),
     });
 
     if (!res.ok) {
