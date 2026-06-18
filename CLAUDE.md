@@ -139,8 +139,22 @@ Auditoría SEO ML 2026 + reescritura completa. Deployado a prod y verificado end
   ya manejaba `null` → cae al nombre del slug + hint, devolviendo **200 con body válido**.
   Verificado en prod: el repro (fravega + content vacío) pasó de 500 size 0 a 200 estable x4.
 - `/api/generate` ya tenía su Groq en try/catch (502 con body) — no afectado.
-- Nota UX pendiente: `/api/jina` puede tardar ~45-55s en páginas SPA pesadas (X-Timeout 45 /
-  AbortSignal 55s). No rompe (el error ya no aparece) pero es un wait largo; evaluar bajarlo.
+
+## Bot descripciones ML — scrape paralelo "todo en el menor tiempo" (2026-06-18)
+- **Antes**: `onScrape` esperaba `/api/jina` (bloqueante, hasta 55s) ANTES de llamar a
+  `/api/scrape`. El usuario miraba un spinner ~50s antes de ver cualquier campo.
+- **Ahora** (`components/BotForm.tsx`): Jina y scrape corren **en paralelo**. Se hace
+  `await` de `/api/scrape` (content vacío) primero → los **campos aparecen en ~1.8s** y el
+  form se desbloquea (`setScrapeLoading(false)`). Jina sigue en segundo plano (`mediaLoading`)
+  y al volver agrega fotos/videos. Para sitios no-ML con contenido rico (>800 chars) hace una
+  segunda pasada a `/api/scrape` con el content de Jina para mejorar la ficha, mergeando solo
+  los campos que el usuario NO editó (compara contra `firstFields`).
+- Indicador UI nuevo: "Buscando fotos del producto… podés ir completando mientras tanto."
+- **Jina timeout bajado** (`app/api/jina/route.ts`): X-Timeout 45→30, AbortSignal 55s→35s.
+  Las SPAs pesadas (AliExpress, Fravega) devolvían basura/vacío aun con 45s, así que no se
+  pierde nada útil y se acota la espera de fotos. Verificado en prod: jina 48s→35s, scrape 1.8s.
+- Costo: sitios no-ML con contenido rico pueden gastar hasta 2 llamadas a Groq (scrape inicial
+  + reextracción). Despreciable a la escala actual; vigilar si crece (free tier Groq).
 
 ## Estado actual (al cierre — 2026-05-31)
 ✅ Scaffolding Next.js 16 + Tailwind v4 + deps instaladas
