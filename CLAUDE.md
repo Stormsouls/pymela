@@ -155,6 +155,9 @@ Auditoría SEO ML 2026 + reescritura completa. Deployado a prod y verificado end
   pierde nada útil y se acota la espera de fotos. Verificado en prod: jina 48s→35s, scrape 1.8s.
 - Costo: sitios no-ML con contenido rico pueden gastar hasta 2 llamadas a Groq (scrape inicial
   + reextracción). Despreciable a la escala actual; vigilar si crece (free tier Groq).
+- **`producto` ("¿Qué estás vendiendo?") YA NO es required** (`lib/bots.ts`): se autocompleta
+  desde el link y no debe bloquear el submit manualmente. NO volver a ponerle `required: true`.
+  Required del bot descripciones quedan: plataforma, condicion, caracteristicas.
 
 ## Estado actual (al cierre — 2026-05-31)
 ✅ Scaffolding Next.js 16 + Tailwind v4 + deps instaladas
