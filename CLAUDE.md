@@ -211,7 +211,16 @@ La anon key viaja en el bundle del cliente: una tabla sin RLS queda 100% abierta
    NOTA: la env `ML_TOKEN_ENC_KEY` en Vercel se cargó vía REST API (el CLI 54.x no toma stdin).
    El token del CLI de Vercel está en `%APPDATA%\xdg.data\com.vercel.cli\auth.json` (con comentarios // que hay que filtrar para parsear).
 
-✅ GROQ_API_KEY rotada (2026-06-12): key nueva dedicada de Pymela cargada en Vercel (PATCH REST API) + .env.local + redeploy + verificada con /api/generate. FALTA que el user revoque la key vieja (`gsk_v5eY...Wl30`) en console.groq.com.
+✅ GROQ_API_KEY rotada (2026-06-12): key nueva dedicada de Pymela cargada en Vercel (PATCH REST API) + .env.local + redeploy + verificada con /api/generate.
+
+⚠ GROQ_API_KEY se invalidó (2026-06-18): la key del 2026-06-12 (`gsk_jiM7...6uUG`) pasó a
+401 Invalid API Key → rompió TODO el flujo de IA (generate 502, scrape devolvía ficha vacía).
+NO era bug de scrape/timeout. Diagnóstico: probar la key con
+`curl https://api.groq.com/openai/v1/models -H "Authorization: Bearer <key>"` (401 = muerta).
+Rotada a key dedicada **"Pymela nueva 2"** (`gsk_CNmv...AWk`), cargada en Vercel (prod+preview+dev,
+PATCH REST API env id `C7YBNGdfGqUYjj90`, teamId `team_6WTZYY18SStqxd3obbGQ4M8H`) + .env.local +
+redeploy + verificada (generate 200, reextracción llena `caracteristicas`). Keys muertas:
+`gsk_v5eY...Wl30` (Bienestar) y `gsk_jiM7...6uUG`. Método REST API para rotar documentado arriba.
 
 🔴 Pendientes de seguridad:
 1. Webhook usa procesamiento async sin `waitUntil` → confiabilidad (puede cortarse la respuesta antes de publicar). No es seguridad, es robustez.
