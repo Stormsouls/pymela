@@ -144,55 +144,92 @@ export function BotForm({ bot }: { bot: Bot }) {
     if (!scrapeUrl.trim()) return;
     setScrapeLoading(true);
     setScrapeError(null);
+    setScrapeHint(null);
+
+    const normalizedUrl = scrapeUrl.trim().replace(/\?$/, ""); // quitar ? al final
+    let isML = false;
     try {
-      const normalizedUrl = scrapeUrl.trim().replace(/\?$/, ""); // quitar ? al final
+      const host = new URL(normalizedUrl).hostname;
+      isML = host.includes("mercadolibre") || host.includes("mercadolivre");
+      if (isML) setMlHost(host.replace(/^articulo\.|^www\./, "www."));
+    } catch { /* ignorar */ }
 
-      // Paso 1: Jina Reader vía /api/jina (Edge function, 30s timeout, sin CORS)
-      let jinaContent = "";
-      try {
-        const jinaRes = await fetch(`/api/jina?url=${encodeURIComponent(normalizedUrl)}`);
-        if (jinaRes.ok) {
-          const jinaData = await jinaRes.json();
-          if (jinaData.code === 200 && jinaData.data) {
-            const { title = "", description = "", content = "", extractedImages = [], extractedVideos = [] } = jinaData.data;
-            jinaContent = `Título: ${title}\nDescripción: ${description}\n\n${content}`.slice(0, 12000);
-            if (Array.isArray(extractedImages) && extractedImages.length > 0) {
-              setScrapedImages(extractedImages);
-            }
-            if (Array.isArray(extractedVideos) && extractedVideos.length > 0) {
-              setScrapedVideos(extractedVideos);
-            }
-          }
-        }
-      } catch { /* si falla, el servidor intenta fetch directo */ }
+    // Jina corre EN PARALELO (best-effort): aporta fotos/videos y, para sitios no-ML,
+    // contenido rico para reextraer la ficha. No bloquea los campos: el usuario ve el
+    // formulario completo apenas responde /api/scrape, y las fotos llegan después.
+    const jinaPromise = fetch(`/api/jina?url=${encodeURIComponent(normalizedUrl)}`, {
+      signal: AbortSignal.timeout(38000),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
 
-      // Paso 2: enviar al servidor (con el contenido de Jina si lo tenemos)
+    let firstFields: Record<string, string> = {};
+    try {
+      // Campos al instante: scrape sin esperar a Jina. ML usa su API oficial; el resto,
+      // fetch server-side + nombre del slug. Devuelve siempre rápido (~1-6s).
       const res = await fetch("/api/scrape", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: normalizedUrl, content: jinaContent }),
+        body: JSON.stringify({ url: normalizedUrl, content: "" }),
       });
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Error al scrapear");
-      setValues((prev) => ({ ...prev, ...data.fields }));
+      firstFields = data.fields ?? {};
+      setValues((prev) => ({ ...prev, ...firstFields }));
       setScrapeHint(data.hint ?? null);
-      // Fotos/videos desde el servidor (ej. ML vía API oficial), además de los de Jina.
+      // Fotos/videos desde el servidor (ej. ML vía API oficial).
       if (Array.isArray(data.images) && data.images.length > 0) {
         setScrapedImages((prev) => Array.from(new Set([...data.images, ...prev])).slice(0, 30));
       }
       if (Array.isArray(data.videos) && data.videos.length > 0) {
         setScrapedVideos((prev) => Array.from(new Set([...data.videos, ...prev])).slice(0, 3));
       }
-      // Si el link es de MercadoLibre, recordamos el dominio del país para el botón "Publicar".
-      try {
-        const host = new URL(normalizedUrl).hostname;
-        if (host.includes("mercadolibre") || host.includes("mercadolivre")) setMlHost(host.replace(/^articulo\.|^www\./, "www."));
-      } catch { /* ignorar */ }
       setScrapeUrl("");
     } catch (err) {
       setScrapeError(err instanceof Error ? err.message : "Error inesperado");
-    } finally {
       setScrapeLoading(false);
+      return;
+    }
+
+    // Campos listos → formulario desbloqueado. Las fotos siguen cargando en segundo plano.
+    setScrapeLoading(false);
+    setMediaLoading(true);
+    try {
+      const jinaData = await jinaPromise;
+      if (jinaData && jinaData.code === 200 && jinaData.data) {
+        const { title = "", description = "", content = "", extractedImages = [], extractedVideos = [] } = jinaData.data;
+        if (Array.isArray(extractedImages) && extractedImages.length > 0) {
+          setScrapedImages((prev) => Array.from(new Set([...prev, ...extractedImages])).slice(0, 30));
+        }
+        if (Array.isArray(extractedVideos) && extractedVideos.length > 0) {
+          setScrapedVideos((prev) => Array.from(new Set([...prev, ...extractedVideos])).slice(0, 3));
+        }
+        // No-ML con contenido rico: reextraemos la ficha y mejoramos los campos que el
+        // usuario no editó (el nombre del slug suele venir, pero no las características).
+        if (!isML && typeof content === "string" && content.length > 800) {
+          const jinaContent = `Título: ${title}\nDescripción: ${description}\n\n${content}`.slice(0, 12000);
+          const res2 = await fetch("/api/scrape", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: normalizedUrl, content: jinaContent }),
+          });
+          const data2 = await safeJson(res2);
+          if (res2.ok && data2.fields) {
+            setValues((prev) => {
+              const merged = { ...prev };
+              for (const [k, v] of Object.entries(data2.fields as Record<string, string>)) {
+                if (!v) continue;
+                const userEdited = prev[k] !== undefined && (prev[k] ?? "") !== (firstFields[k] ?? "");
+                if (!userEdited) merged[k] = v;
+              }
+              return merged;
+            });
+          }
+        }
+      }
+    } catch { /* fotos best-effort: si Jina falla, los campos ya están */ }
+    finally {
+      setMediaLoading(false);
     }
   }
 
