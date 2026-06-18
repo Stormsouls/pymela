@@ -109,6 +109,7 @@ export function BotForm({ bot }: { bot: Bot }) {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [scrapeUrl, setScrapeUrl] = useState("");
   const [scrapeLoading, setScrapeLoading] = useState(false);
+  const [mediaLoading, setMediaLoading] = useState(false);
   const [scrapeError, setScrapeError] = useState<string | null>(null);
   const [scrapeHint, setScrapeHint] = useState<string | null>(null);
   const [scrapedImages, setScrapedImages] = useState<string[]>([]);
