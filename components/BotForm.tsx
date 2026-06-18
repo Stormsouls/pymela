@@ -426,6 +426,12 @@ export function BotForm({ bot }: { bot: Bot }) {
           {scrapeHint && (
             <p className="mt-2 text-xs text-amber-600">⚠ {scrapeHint}</p>
           )}
+          {mediaLoading && (
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-zinc-500">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Buscando fotos del producto… podés ir completando mientras tanto.
+            </p>
+          )}
         </div>
       )}
 
