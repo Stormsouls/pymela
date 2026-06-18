@@ -443,7 +443,7 @@ export function BotForm({ bot }: { bot: Bot }) {
           {mediaLoading && (
             <p className="mt-2 flex items-center gap-1.5 text-xs text-zinc-500">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Buscando fotos del producto… podés ir completando mientras tanto.
+              Buscando fotos y datos del producto… podés ir completando mientras tanto.
             </p>
           )}
         </div>
