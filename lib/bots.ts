@@ -45,7 +45,7 @@ export const BOTS: Bot[] = [
     cta: "Generar descripción",
     scrapeUrl: true,
     fields: [
-      { name: "producto", label: "¿Qué estás vendiendo?", type: "text", required: true, placeholder: "Ej: Smart Ring Yawell R09 Bluetooth Control Gestual" },
+      { name: "producto", label: "¿Qué estás vendiendo?", type: "text", placeholder: "Ej: Smart Ring Yawell R09 Bluetooth Control Gestual", help: "Se completa solo si pegás un link arriba. Si no, escribilo." },
       { name: "plataforma", label: "¿Dónde lo vas a publicar?", type: "select", required: true, options: ["MercadoLibre", "Instagram / Facebook", "Marketplace"] },
       { name: "condicion", label: "Condición", type: "select", required: true, options: ["Nuevo", "Usado", "Reacondicionado"] },
       { name: "marca", label: "Marca y modelo", type: "text", placeholder: "Ej: Yawell R09" },
