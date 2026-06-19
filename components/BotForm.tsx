@@ -254,6 +254,7 @@ export function BotForm({ bot }: { bot: Bot }) {
     setResult(null);
     setEnrichResult(null);
     setEnrichError(null);
+    setCategoryPath(null);
     setLoading(true);
     try {
       // Para descripciones pasamos el enfoque para que "otra versión" cambie el ángulo SEO.
