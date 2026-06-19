@@ -105,6 +105,12 @@ function isProductImage(url: string, alt = ""): boolean {
     const w = parseInt(dim[1], 10), h = parseInt(dim[2], 10);
     if (w < 200 && h < 200) return false;
   }
+  // alicdn/AliExpress codifican el tamaño con guion: "...-tps-54-55.png" = 54×55 (icono).
+  const tps = lower.match(/-tps-(\d{2,4})-(\d{2,4})(?:\.|_|-|\?|$)/);
+  if (tps) {
+    const w = parseInt(tps[1], 10), h = parseInt(tps[2], 10);
+    if (w < 250 && h < 250) return false;
+  }
   // Aceptar si tiene extensión de imagen conocida o URL de CDN de imagen
   const hasImgExt = /\.(jpg|jpeg|png|webp|avif|bmp)(\?|_|$)/i.test(lower);
   const isImgCdn = /\/(img|image|images|photo|photos|media|product|item|goods)\//i.test(lower);
