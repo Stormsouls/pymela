@@ -120,6 +120,8 @@ export function BotForm({ bot }: { bot: Bot }) {
   const [enrichLoading, setEnrichLoading] = useState(false);
   const [enrichResult, setEnrichResult] = useState<{ atributos: { name: string; value: string }[]; fuentes: string[]; hint?: string } | null>(null);
   const [enrichError, setEnrichError] = useState<string | null>(null);
+  const [categoryPath, setCategoryPath] = useState<{ path: string[]; domain?: string } | null>(null);
+  const [categoryLoading, setCategoryLoading] = useState(false);
 
   const { user, isAnon, signInWithEmail } = useAuth();
   const { saveGeneration } = useHistory();
