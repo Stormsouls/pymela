@@ -268,6 +268,23 @@ export function BotForm({ bot }: { bot: Bot }) {
       if (!res.ok) throw new Error(data.error || "Error al generar");
       setResult(data.text);
       bumpUses();
+      // Árbol de categorías exacto donde publicar en ML (predictor oficial de ML).
+      // Fire-and-forget: no bloquea el resultado ya mostrado.
+      if (bot.slug === "descripciones" && (values.plataforma ?? "").includes("Mercado")) {
+        const q = `${values.keyword || values.producto || ""} ${values.marca || ""}`.trim();
+        if (q) {
+          setCategoryLoading(true);
+          fetch("/api/ml-category", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ q, host: mlHost }),
+          })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((d) => { if (d && Array.isArray(d.path) && d.path.length) setCategoryPath({ path: d.path, domain: d.domain }); })
+            .catch(() => { /* sin categoría: no rompe nada */ })
+            .finally(() => setCategoryLoading(false));
+        }
+      }
       // Guardar en historial si el usuario tiene sesión
       if (user) {
         saveGeneration({
