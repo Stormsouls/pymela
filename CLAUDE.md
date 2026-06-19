@@ -174,6 +174,27 @@ Auditoría SEO ML 2026 + reescritura completa. Deployado a prod y verificado end
 - Nota deploy: el token del CLI de Vercel (auth.json) caduca (`expiresAt`); si da 403/"not
   valid", correr `vercel --prod` SIN `--token` deja que el CLI auto-refresque con el refreshToken.
 
+## Bot descripciones ML — fotos relevantes + categoría ML + disclaimer (2026-06-18)
+- **Fotos solo relevantes** (`app/api/jina/route.ts`): (1) `isProductImage` ahora filtra el
+  patrón de tamaño de alicdn/AliExpress con guiones `…-tps-54-55.png` (antes solo detectaba
+  `WxH` con "x") → caían iconos de 54×55px de Alibaba; (2) `extractImages` con 2+ fotos del
+  CDN del producto devuelve SOLO esas (antes anexaba siempre las "secondary": recomendados,
+  banners, widgets). Verificado: Alibaba pasó de 28 fotos + 2 iconos a 30 fotos del producto, 0 iconos.
+- **Enrich enfocado en huecos** (`app/api/enrich/route.ts`): el prompt ahora prioriza los
+  atributos que FALTAN respecto de los ya extraídos (marca, modelo, color, material, medidas,
+  peso, capacidad, conectividad, batería, garantía, etc.), solo NUEVOS y explícitos, en español.
+- **Árbol de categorías exacto de ML** (`app/api/ml-category/route.ts`, NUEVO): usa el predictor
+  oficial de ML (`/sites/{site}/domain_discovery/search` → `category_id` → `/categories/{id}`
+  `path_from_root`). API pública sin auth. `siteFromHost` mapea el dominio del país (.com.ar→MLA,
+  .com.mx→MLM, .com.br→MLB, etc.). BotForm lo llama post-generación (fire-and-forget, no bloquea)
+  con `q = keyword||producto + marca` y `host = mlHost`, y muestra una tarjeta verde "Dónde
+  publicarlo en MercadoLibre: A › B › C". Verificado: anillo Yawell R09 → "Celulares y Teléfonos
+  > Smartwatches y Accesorios > Anillos Inteligentes".
+- **Disclaimer sutil** (`components/BotForm.tsx`): nota gris al pie del resultado (ícono ShieldCheck)
+  "Pymela arma un borrador… revisá precio, specs y datos antes de publicar". + la tarjeta de
+  categoría aclara "confirmala al publicar". Protege sin ser brusco. NO va en el texto copiable
+  (no ensucia la publicación), solo en la UI.
+
 ## Estado actual (al cierre — 2026-05-31)
 ✅ Scaffolding Next.js 16 + Tailwind v4 + deps instaladas
 ✅ Registro de 5 bots + prompts LatAm + form dinámico
