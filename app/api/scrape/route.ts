@@ -118,7 +118,12 @@ async function extractWithGroq(pageContent: string): Promise<Record<string, stri
         {
           role: "user",
           content: `Extraé los datos y devolvé SOLO un JSON válido con esta estructura (sin texto extra, sin markdown):
-{"producto":"nombre completo","categoria":"categoría","condicion":"Nuevo|Usado|Reacondicionado","caracteristicas":"características separadas por comas o saltos de línea"}
+{"producto":"nombre del producto INCLUYENDO marca y modelo/código si aparecen","marca":"marca y modelo/código exactos","categoria":"categoría","condicion":"Nuevo|Usado|Reacondicionado","caracteristicas":"características separadas por comas o saltos de línea"}
+
+Reglas:
+- CONSERVÁ SIEMPRE el modelo o código del producto (ej: R09, A54, Pro Max, XR) tanto en "producto" como en "marca": es lo más importante para que el comprador lo encuentre. Nunca lo omitas si aparece en el contenido.
+- "producto" debe ser conciso pero completo (ej: "Anillo Inteligente Yawell R09"), sin frases de marketing largas.
+- No inventes datos. Si un campo no está disponible, devolvé cadena vacía.
 
 Contenido:
 ${pageContent}`,
