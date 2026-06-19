@@ -72,12 +72,11 @@ function extractImages(content: string, imagesData: Record<string, unknown> | nu
   // 3. URLs de imagen sueltas
   for (const m of content.matchAll(/https?:\/\/[^\s"'<>)]+\.(?:jpg|jpeg|png|webp|avif)(?:\?[^\s"'<>)]*)?/gi)) consider(m[0]);
 
-  // Con 2+ fotos del propio producto (CDN conocido) devolvemos SOLO esas: las "secondary"
-  // son imágenes sueltas de la página (recomendados, banners, widgets) que casi nunca son
-  // del producto y ensucian la galería. Solo si no hay fotos de producto confiables caemos
-  // a secondary, con un tope bajo para no diluir la relevancia.
-  if (primary.length >= 2) return primary.slice(0, 30);
-  return [...primary, ...secondary].slice(0, 10);
+  // Primero las fotos del propio producto (CDN conocido), después las "secondary": en muchos
+  // sitios las fotos reales se sirven desde un CDN genérico y caen ahí, así que NO las
+  // descartamos (perderíamos fotos buenas) — solo las dejamos al final. El filtrado de iconos/
+  // banners/logos lo hace isProductImage; acá solo ordenamos por relevancia.
+  return primary.length > 0 ? [...primary, ...secondary].slice(0, 30) : secondary.slice(0, 15);
 }
 
 // Extrae videos PROPIOS de la publicación (descargables): mp4/webm directos y
