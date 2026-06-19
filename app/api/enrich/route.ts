@@ -112,12 +112,16 @@ export async function POST(req: NextRequest) {
           role: "user",
           content:
             `Producto: ${marca} ${producto}\n\n` +
-            `Atributos que YA tengo (no los repitas):\n${existing || "(ninguno)"}\n\n` +
+            `Atributos que YA tengo (NO los repitas — son los que ya saqué de la publicación):\n${existing || "(ninguno)"}\n\n` +
             `Contenido de fuentes web:\n${corpus}\n\n` +
+            `Tu objetivo es COMPLETAR LOS HUECOS: encontrá los atributos que FALTAN en la lista de arriba.\n` +
+            `Priorizá los que más pesan en una ficha de MercadoLibre y que no tenga todavía, por ejemplo: ` +
+            `marca, modelo, color, material, medidas/dimensiones, peso, capacidad, compatibilidad, conectividad, ` +
+            `autonomía/batería, resistencia al agua, contenido de la caja, garantía.\n` +
             `Devolvé un JSON con esta forma exacta:\n` +
             `{"atributos":[{"name":"Nombre del atributo","value":"valor textual de la fuente"}]}\n` +
-            `Incluí solo atributos NUEVOS (que no estén en los que ya tengo) y que estén EXPLÍCITOS en el contenido. ` +
-            `Si no hay ninguno confiable, devolvé {"atributos":[]}.`,
+            `Reglas: solo atributos NUEVOS (que no estén en los que ya tengo), solo si están EXPLÍCITOS en el contenido ` +
+            `(nunca inventes ni infieras), en español. Si no hay ninguno confiable, devolvé {"atributos":[]}.`,
         },
       ],
     });
