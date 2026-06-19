@@ -871,6 +871,11 @@ export function BotForm({ bot }: { bot: Bot }) {
               )}
             </div>
           )}
+
+          <p className="mt-6 flex items-start gap-1.5 border-t border-zinc-100 pt-3 text-[11px] leading-relaxed text-zinc-400">
+            <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>Pymela arma un borrador con la información disponible y puede tener imprecisiones. Revisá precio, especificaciones y datos antes de publicar.</span>
+          </p>
         </div>
       )}
     </div>
