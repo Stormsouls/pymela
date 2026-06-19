@@ -639,6 +639,26 @@ export function BotForm({ bot }: { bot: Bot }) {
             );
           })()}
 
+          {/* Árbol de categorías exacto donde publicar en ML */}
+          {categoryPath && (
+            <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <p className="flex items-center gap-2 text-sm font-semibold text-emerald-800">
+                <FolderTree className="h-4 w-4" /> Dónde publicarlo en MercadoLibre
+              </p>
+              <p className="mt-1.5 text-sm font-medium text-emerald-900">
+                {categoryPath.path.join("  ›  ")}
+              </p>
+              <p className="mt-1.5 text-[11px] text-emerald-700/80">
+                Categoría que sugiere MercadoLibre para este producto. Al publicar, confirmala: a veces hay una variante más específica.
+              </p>
+            </div>
+          )}
+          {categoryLoading && !categoryPath && (
+            <p className="mt-3 flex items-center gap-1.5 text-xs text-zinc-400">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Buscando la categoría exacta en MercadoLibre…
+            </p>
+          )}
+
           <div className="mt-4 flex flex-wrap gap-2.5">
             <button
               onClick={copy}
