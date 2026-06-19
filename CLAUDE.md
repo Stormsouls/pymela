@@ -159,6 +159,21 @@ Auditoría SEO ML 2026 + reescritura completa. Deployado a prod y verificado end
   desde el link y no debe bloquear el submit manualmente. NO volver a ponerle `required: true`.
   Required del bot descripciones quedan: plataforma, condicion, caracteristicas.
 
+## Bot descripciones ML — extracción conserva marca/modelo + traduce (2026-06-18)
+- **Síntoma**: link de Alibaba (Yawell R09) → el título salía "Anillo Inteligente Yawell" SIN
+  el modelo R09, y el campo "Marca y modelo" quedaba vacío.
+- **Causa**: el prompt de `extractWithGroq` (`app/api/scrape/route.ts`) solo extraía
+  `{producto, categoria, condicion, caracteristicas}` — NO extraía `marca`, y resumía el
+  nombre perdiendo el código de modelo (R09).
+- **Fix**: el JSON de extracción ahora incluye `"marca"` y reglas: (1) conservar SIEMPRE el
+  modelo/código (R09, A54, Pro Max) en `producto` y `marca`; (2) `producto` conciso pero
+  completo; (3) devolver todo en español (waterproof→resistente al agua) sin traducir
+  marcas/modelos. Verificado en prod: producto="Anillo Inteligente Yawell R09",
+  marca="Yawell R09", caracteristicas en español. El builder de generación ya usaba `v.marca`,
+  así el R09 ahora aparece en TÍTULO, descripción y ficha técnica.
+- Nota deploy: el token del CLI de Vercel (auth.json) caduca (`expiresAt`); si da 403/"not
+  valid", correr `vercel --prod` SIN `--token` deja que el CLI auto-refresque con el refreshToken.
+
 ## Estado actual (al cierre — 2026-05-31)
 ✅ Scaffolding Next.js 16 + Tailwind v4 + deps instaladas
 ✅ Registro de 5 bots + prompts LatAm + form dinámico
