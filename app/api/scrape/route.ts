@@ -123,6 +123,7 @@ async function extractWithGroq(pageContent: string): Promise<Record<string, stri
 Reglas:
 - CONSERVÁ SIEMPRE el modelo o código del producto (ej: R09, A54, Pro Max, XR) tanto en "producto" como en "marca": es lo más importante para que el comprador lo encuentre. Nunca lo omitas si aparece en el contenido.
 - "producto" debe ser conciso pero completo (ej: "Anillo Inteligente Yawell R09"), sin frases de marketing largas.
+- Devolvé todo en español: traducí los términos en inglés (ej: "waterproof" → "resistente al agua", "smart ring" → "anillo inteligente"). NO traduzcas ni alteres marcas ni modelos/códigos (Yawell, R09, etc.).
 - No inventes datos. Si un campo no está disponible, devolvé cadena vacía.
 
 Contenido:
