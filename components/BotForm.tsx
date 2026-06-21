@@ -698,95 +698,105 @@ export function BotForm({ bot }: { bot: Bot }) {
             </p>
           )}
 
-          {/* Análisis de competencia (FODA) — qué publican y opinan sobre productos iguales en ML */}
+          {/* Análisis de la competencia — qué productos parecidos ya se venden en ML */}
           {(fodaLoading || foda) && (
             <div className="mt-4 overflow-hidden rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-fuchsia-50">
               <div className="flex items-center gap-2 border-b border-violet-100 px-4 py-3">
                 <Target className="h-4 w-4 text-violet-600" />
-                <p className="text-sm font-semibold text-violet-900">Análisis de la competencia (FODA)</p>
+                <p className="text-sm font-semibold text-violet-900">Análisis de la competencia</p>
                 {fodaLoading && <Loader2 className="ml-auto h-3.5 w-3.5 animate-spin text-violet-400" />}
               </div>
 
               {fodaLoading && !foda && (
                 <p className="px-4 py-3 text-xs text-violet-700/80">
-                  Analizando qué publican y qué opinan los compradores sobre productos iguales en MercadoLibre…
+                  Mirando qué productos parecidos ya se venden en MercadoLibre…
                 </p>
               )}
 
-              {/* Sin cuenta conectada o conexión vencida → CTA para conectar */}
+              {/* Sin cuenta conectada o conexión vencida → CTA en otra pestaña (no se pierde lo hecho) */}
               {foda && foda.connected === false && (
                 <div className="px-4 py-4">
                   <p className="text-sm text-violet-900">
                     {foda.expired
-                      ? "Tu conexión con MercadoLibre venció. Reconectá tu cuenta para ver el análisis de la competencia."
-                      : "Conectá tu cuenta de MercadoLibre para ver qué publican tus competidores, sus precios y qué opinan los compradores."}
+                      ? "Tu conexión con MercadoLibre venció. Reconectá tu cuenta para ver con qué productos competís."
+                      : "Conectá tu cuenta de MercadoLibre para ver con qué marcas y productos vas a competir."}
                   </p>
-                  <Link
+                  <a
                     href="/conectar-ml"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-violet-700"
                   >
                     <Sparkles className="h-3.5 w-3.5" />
                     {foda.expired ? "Reconectar MercadoLibre" : "Conectar MercadoLibre"}
-                  </Link>
-                  <p className="mt-2 text-[11px] text-violet-700/70">Gratis. Solo lectura de publicaciones públicas para comparar tu producto.</p>
+                  </a>
+                  <p className="mt-2 text-[11px] text-violet-700/70">Se abre en otra pestaña: no perdés lo que estás haciendo acá. Es gratis y solo lee información pública.</p>
                 </div>
               )}
 
-              {/* Conectado pero ML limitó el acceso al buscador */}
+              {/* Conectado pero ML limitó el acceso */}
               {foda && foda.connected && foda.available === false && (
                 <p className="px-4 py-4 text-sm text-violet-800/90">
-                  No pudimos traer la competencia en este momento (MercadoLibre limitó el acceso). Probá de nuevo en un rato.
+                  No pudimos traer la competencia en este momento. Probá de nuevo en un rato.
                 </p>
               )}
 
-              {/* Conectado, sin publicaciones similares */}
+              {/* Conectado, sin productos parecidos */}
               {foda && foda.connected && foda.available && foda.empty && (
                 <p className="px-4 py-4 text-sm text-violet-800/90">
-                  No encontramos publicaciones similares para comparar. Probá con una palabra clave más general.
+                  No encontramos productos parecidos para comparar. Probá con una palabra más general (ej: «anillo inteligente»).
                 </p>
               )}
 
               {/* Resultado con datos */}
               {foda && foda.connected && foda.available && !foda.empty && (() => {
-                const f = foda.foda;
-                const fmt = (n: number) => new Intl.NumberFormat("es-AR").format(n);
-                const quadrants = [
-                  { label: "Fortalezas", items: f?.fortalezas, Icon: TrendingUp, box: "border-emerald-200 bg-emerald-50/70", head: "text-emerald-700", dot: "bg-emerald-500" },
-                  { label: "Debilidades", items: f?.debilidades, Icon: AlertTriangle, box: "border-rose-200 bg-rose-50/70", head: "text-rose-700", dot: "bg-rose-500" },
-                  { label: "Oportunidades", items: f?.oportunidades, Icon: Lightbulb, box: "border-sky-200 bg-sky-50/70", head: "text-sky-700", dot: "bg-sky-500" },
-                  { label: "Amenazas", items: f?.amenazas, Icon: ShieldAlert, box: "border-amber-200 bg-amber-50/70", head: "text-amber-700", dot: "bg-amber-500" },
+                const a = foda.analisis;
+                const marcas = foda.marcas ?? [];
+                const blocks = [
+                  { key: "que_ofrecen", label: "Qué destacan los que ya venden", items: a?.que_ofrecen, Icon: TrendingUp, box: "border-sky-200 bg-sky-50/70", head: "text-sky-700", dot: "bg-sky-500" },
+                  { key: "como_destacar", label: "Cómo podés destacarte", items: a?.como_destacar, Icon: Lightbulb, box: "border-emerald-200 bg-emerald-50/70", head: "text-emerald-700", dot: "bg-emerald-500" },
                 ];
-                const ms = foda.marketStats;
                 return (
                   <div className="space-y-3 px-4 py-4">
-                    {ms && (
-                      <div className="rounded-xl border border-violet-100 bg-white/70 px-3.5 py-2.5">
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-violet-500">Precios del mercado</p>
-                        <p className="mt-1 text-sm text-zinc-800">
-                          <span className="font-semibold">{ms.moneda} {fmt(ms.min)}</span>
-                          <span className="text-zinc-400"> – </span>
-                          <span className="font-semibold">{ms.moneda} {fmt(ms.max)}</span>
-                          <span className="text-zinc-500"> · mediana </span>
-                          <span className="font-semibold text-violet-700">{ms.moneda} {fmt(ms.mediana)}</span>
-                          <span className="text-zinc-400"> ({ms.muestras} publicaciones)</span>
-                        </p>
+                    {a?.resumen && <p className="text-sm leading-relaxed text-zinc-700">{a.resumen}</p>}
+
+                    {(marcas.length > 0 || (a?.competencia && a.competencia.length > 0)) && (
+                      <div className="rounded-xl border border-violet-100 bg-white/70 p-3">
+                        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-violet-600"><Store className="h-3.5 w-3.5" /> Con quién competís</p>
+                        {marcas.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {marcas.map((m, k) => (
+                              <span key={k} className="rounded-full border border-violet-200 bg-white px-2.5 py-1 text-xs font-medium text-violet-700">
+                                {m.name}{m.count > 1 ? ` ·${m.count}` : ""}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {a?.competencia && a.competencia.length > 0 && (
+                          <ul className="mt-2 space-y-1.5">
+                            {a.competencia.map((it, k) => (
+                              <li key={k} className="flex gap-2 text-sm text-zinc-700">
+                                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" />
+                                <span>{it}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
                     )}
 
-                    {f?.resumen && <p className="text-sm leading-relaxed text-zinc-700">{f.resumen}</p>}
-
-                    {f && (
+                    {a && (
                       <div className="grid gap-2.5 sm:grid-cols-2">
-                        {quadrants.map((qd) =>
-                          qd.items && qd.items.length > 0 ? (
-                            <div key={qd.label} className={cn("rounded-xl border p-3", qd.box)}>
-                              <p className={cn("flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide", qd.head)}>
-                                <qd.Icon className="h-3.5 w-3.5" /> {qd.label}
+                        {blocks.map((b) =>
+                          b.items && b.items.length > 0 ? (
+                            <div key={b.key} className={cn("rounded-xl border p-3", b.box)}>
+                              <p className={cn("flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide", b.head)}>
+                                <b.Icon className="h-3.5 w-3.5" /> {b.label}
                               </p>
                               <ul className="mt-2 space-y-1.5">
-                                {qd.items.map((it, k) => (
+                                {b.items.map((it, k) => (
                                   <li key={k} className="flex gap-2 text-sm text-zinc-700">
-                                    <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", qd.dot)} />
+                                    <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", b.dot)} />
                                     <span>{it}</span>
                                   </li>
                                 ))}
@@ -797,48 +807,37 @@ export function BotForm({ bot }: { bot: Bot }) {
                       </div>
                     )}
 
-                    {f?.keywords_top && f.keywords_top.length > 0 && (
-                      <div>
-                        <p className="flex items-center gap-1.5 text-xs font-semibold text-zinc-600"><Tag className="h-3.5 w-3.5 text-violet-500" /> Keywords que usan los que más venden</p>
-                        <div className="mt-1.5 flex flex-wrap gap-1.5">
-                          {f.keywords_top.map((kw, k) => (
-                            <span key={k} className="rounded-full border border-violet-200 bg-white px-2.5 py-1 text-xs font-medium text-violet-700">{kw}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {f?.atributos_sugeridos && f.atributos_sugeridos.length > 0 && (
-                      <div>
-                        <p className="text-xs font-semibold text-zinc-600">Atributos de ficha a completar para competir</p>
-                        <div className="mt-1.5 flex flex-wrap gap-1.5">
-                          {f.atributos_sugeridos.map((at, k) => (
-                            <span key={k} className="rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-600">{at}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {f?.quejas_comunes && f.quejas_comunes.length > 0 && (
+                    {a?.que_te_falta && a.que_te_falta.length > 0 && (
                       <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Quejas frecuentes de compradores</p>
-                        <p className="text-[11px] text-amber-700/70">Adelantate: respondelas en tu descripción y FAQ.</p>
+                        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-700"><Plus className="h-3.5 w-3.5" /> Datos que te conviene agregar</p>
+                        <p className="text-[11px] text-amber-700/70">El mercado los muestra y a tu publicación le suman.</p>
                         <ul className="mt-2 space-y-1.5">
-                          {f.quejas_comunes.map((qj, k) => (
+                          {a.que_te_falta.map((it, k) => (
                             <li key={k} className="flex gap-2 text-sm text-zinc-700">
                               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                              <span>{qj}</span>
+                              <span>{it}</span>
                             </li>
                           ))}
                         </ul>
                       </div>
                     )}
 
-                    {f?.recomendaciones && f.recomendaciones.length > 0 && (
+                    {a?.palabras_clave && a.palabras_clave.length > 0 && (
+                      <div>
+                        <p className="flex items-center gap-1.5 text-xs font-semibold text-zinc-600"><Tag className="h-3.5 w-3.5 text-violet-500" /> Palabras que más se usan en los títulos</p>
+                        <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          {a.palabras_clave.map((kw, k) => (
+                            <span key={k} className="rounded-full border border-violet-200 bg-white px-2.5 py-1 text-xs font-medium text-violet-700">{kw}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {a?.consejos && a.consejos.length > 0 && (
                       <div className="rounded-xl border border-violet-100 bg-white/70 p-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">Qué hacer para superarlos</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">Consejos para vender más</p>
                         <ul className="mt-2 space-y-1.5">
-                          {f.recomendaciones.map((rc, k) => (
+                          {a.consejos.map((rc, k) => (
                             <li key={k} className="flex gap-2 text-sm text-zinc-800">
                               <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-600" />
                               <span>{rc}</span>
@@ -848,9 +847,13 @@ export function BotForm({ bot }: { bot: Bot }) {
                       </div>
                     )}
 
-                    {!f && (
-                      <p className="text-sm text-violet-800/90">Trajimos los precios de la competencia, pero el análisis detallado no está disponible ahora. Probá «Otra versión» en un momento.</p>
+                    {!a && (
+                      <p className="text-sm text-violet-800/90">Encontramos los productos del mercado, pero el análisis no está disponible ahora. Probá «Otra versión» en un momento.</p>
                     )}
+
+                    <p className="border-t border-violet-100 pt-2 text-[11px] leading-relaxed text-violet-700/70">
+                      Basado en el catálogo de MercadoLibre (marcas, modelos y características). Los precios y las opiniones de compradores no están disponibles por esta vía.
+                    </p>
                   </div>
                 );
               })()}
