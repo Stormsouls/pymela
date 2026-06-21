@@ -37,22 +37,20 @@ async function safeJson(res: Response): Promise<any> {
 
 type Section = { title: string; body: string };
 
-type FodaResponse = {
+type CompetitionResponse = {
   connected: boolean;
   available?: boolean;
   expired?: boolean;
   empty?: boolean;
-  marketStats?: { min: number; max: number; mediana: number; moneda: string; muestras: number } | null;
-  foda?: {
+  marcas?: { name: string; count: number }[];
+  analisis?: {
     resumen?: string;
-    fortalezas?: string[];
-    debilidades?: string[];
-    oportunidades?: string[];
-    amenazas?: string[];
-    keywords_top?: string[];
-    atributos_sugeridos?: string[];
-    quejas_comunes?: string[];
-    recomendaciones?: string[];
+    competencia?: string[];
+    que_ofrecen?: string[];
+    como_destacar?: string[];
+    que_te_falta?: string[];
+    palabras_clave?: string[];
+    consejos?: string[];
   } | null;
 };
 
