@@ -65,17 +65,39 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ connected: true, available: true, empty: true, analisis: null });
   }
 
-  // Normalizar: nombre + marca/modelo + atributos por producto.
-  const comps = products.slice(0, 12).map((p) => {
+  const mine = body.mine ?? {};
+
+  // Tokens del producto del vendedor para detectar coincidencias EXACTAS (misma marca/modelo).
+  const norm = (s: string) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const mineText = norm(`${mine.marca ?? ""} ${mine.producto ?? ""} ${mine.keyword ?? ""}`);
+  const mineBrand = norm(mine.marca ?? "").split(/\s+/).filter((w) => w.length > 2)[0] ?? "";
+  const mineModels = Array.from(
+    new Set(mineText.match(/\b[a-z]{1,4}\d{1,4}[a-z]?\b|\b\d{2,4}[a-z]{1,3}\b/g) ?? [])
+  ).filter((m) => m.length >= 2);
+
+  // Normalizar + clasificar cada producto del catálogo (exacto vs parecido).
+  const comps = products.slice(0, 14).map((p) => {
     const attrs = (p.attributes ?? []).filter((a) => a.value_name);
     const get = (id: string) => attrs.find((a) => a.id === id)?.value_name ?? "";
+    const marca = get("BRAND");
+    const modelo = get("MODEL") || get("ALPHANUMERIC_MODEL") || get("LINE");
+    const hay = norm(`${p.name ?? ""} ${marca} ${modelo}`);
+    const brandMatch = !!mineBrand && (norm(marca).includes(mineBrand) || hay.includes(mineBrand));
+    const modelMatch = mineModels.some((m) => hay.includes(m));
+    const exact = brandMatch && modelMatch;
     return {
       name: p.name ?? "",
-      marca: get("BRAND"),
-      modelo: get("MODEL") || get("ALPHANUMERIC_MODEL") || get("LINE"),
+      marca,
+      modelo,
       attrs: attrs.map((a) => `${a.name}: ${a.value_name}`).slice(0, 14),
+      tier: exact ? 2 : modelMatch || brandMatch ? 1 : 0,
+      exact,
     };
   });
+
+  // Ordenar: primero los exactos, luego los parecidos.
+  comps.sort((a, b) => b.tier - a.tier);
+  const exactCount = comps.filter((c) => c.exact).length;
 
   // Marcas más frecuentes (determinístico, sin gastar tokens).
   const brandCount: Record<string, number> = {};
@@ -88,18 +110,28 @@ export async function POST(req: NextRequest) {
     .slice(0, 8)
     .map(([name, count]) => ({ name, count }));
 
-  // Contexto para Groq.
-  const compContext = comps
-    .map(
-      (c, i) =>
-        `#${i + 1} ${c.name}${c.marca ? ` | Marca: ${c.marca}` : ""}${c.modelo ? ` | Modelo: ${c.modelo}` : ""}\nAtributos: ${c.attrs.join("; ") || "—"}`
-    )
-    .join("\n\n");
+  // Contexto para Groq: separar EXACTOS de PARECIDOS para darles distinto peso.
+  const fmtList = (list: typeof comps) =>
+    list
+      .map(
+        (c, i) =>
+          `#${i + 1} ${c.name}${c.marca ? ` | Marca: ${c.marca}` : ""}${c.modelo ? ` | Modelo: ${c.modelo}` : ""}\nAtributos: ${c.attrs.join("; ") || "—"}`
+      )
+      .join("\n\n");
+  const exactList = comps.filter((c) => c.exact);
+  const similarList = comps.filter((c) => !c.exact);
+  const compContext =
+    (exactList.length
+      ? `=== EXACTAMENTE TU PRODUCTO (mismo modelo/marca — MÁXIMA prioridad) ===\n${fmtList(exactList)}\n\n`
+      : "") +
+    (similarList.length
+      ? `=== PRODUCTOS PARECIDOS (referencia secundaria, menor peso) ===\n${fmtList(similarList)}`
+      : "");
 
-  const mine = body.mine ?? {};
   const voice =
     [
       mine.producto && `Producto: ${mine.producto}`,
+      mine.marca && `Marca y modelo: ${mine.marca}`,
       mine.keyword && `Palabra clave: ${mine.keyword}`,
       mine.caracteristicas && `Características propias: ${mine.caracteristicas}`,
     ]
@@ -121,16 +153,18 @@ export async function POST(req: NextRequest) {
           },
           {
             role: "user",
-            content: `Comparé el producto del vendedor con productos parecidos que ya se venden en MercadoLibre. Armá un análisis simple y accionable.
+            content: `Comparé el producto del vendedor con lo que ya se vende en MercadoLibre. Armá un análisis simple y accionable.
 
 EL PRODUCTO DEL VENDEDOR:
 ${voice}
 
-PRODUCTOS PARECIDOS EN EL MERCADO (${comps.length}):
+LO QUE SE VENDE EN EL MERCADO:
 ${compContext}
 
+REGLA DE PESO: dale MUCHA más importancia a los productos "EXACTAMENTE TU PRODUCTO" (mismo modelo/marca) — son tu competencia directa, de ahí salen las conclusiones más fuertes. Los "PARECIDOS" son referencia secundaria y algunos pueden no aplicar a este producto; usalos solo como contexto general.
+
 Devolvé SOLO este JSON (frases cortas y claras, sin tecnicismos, en español neutro; 2-4 ítems por lista; lista vacía si no hay datos):
-{"resumen":"1-2 frases sobre cómo está el mercado para este producto","competencia":["con qué marcas/modelos vas a competir"],"que_ofrecen":["qué características destacan los que ya venden"],"como_destacar":["formas concretas de diferenciarte y llamar la atención"],"que_te_falta":["datos o características que el mercado muestra y conviene que tengas en tu publicación"],"palabras_clave":["palabras que más se repiten en los títulos del mercado"],"consejos":["consejos concretos para vender más"]}`,
+{"resumen":"1-2 frases sobre cómo está el mercado para este producto","competencia":["con qué marcas/modelos vas a competir, priorizando los iguales a tu producto"],"que_ofrecen":["qué características destacan los que ya venden"],"como_destacar":["formas concretas de diferenciarte y llamar la atención"],"que_te_falta":["datos o características que el mercado muestra y conviene que tengas en tu publicación"],"palabras_clave":["palabras que más se repiten en los títulos del mercado"],"consejos":["consejos concretos para vender más"]}`,
           },
         ],
       },
@@ -148,5 +182,5 @@ Devolvé SOLO este JSON (frases cortas y claras, sin tecnicismos, en español ne
     /* Groq caído → devolvemos al menos las marcas del mercado */
   }
 
-  return NextResponse.json({ connected: true, available: true, marcas, analisis });
+  return NextResponse.json({ connected: true, available: true, exactCount, marcas, analisis });
 }
