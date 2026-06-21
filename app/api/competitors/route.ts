@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   let body: {
     q?: string;
     host?: string;
-    mine?: { producto?: string; keyword?: string; caracteristicas?: string };
+    mine?: { producto?: string; keyword?: string; caracteristicas?: string; marca?: string };
   };
   try {
     body = await req.json();
