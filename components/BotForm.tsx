@@ -42,6 +42,7 @@ type CompetitionResponse = {
   available?: boolean;
   expired?: boolean;
   empty?: boolean;
+  exactCount?: number;
   marcas?: { name: string; count: number }[];
   analisis?: {
     resumen?: string;
