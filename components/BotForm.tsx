@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Copy, Check, Download, FileDown, Loader2, Sparkles, RefreshCw, Link2, ScanSearch, ImageDown, Images, ChevronDown, ExternalLink, Film, Globe, FolderTree, ShieldCheck, Target, TrendingUp, AlertTriangle, Lightbulb, ShieldAlert, Tag } from "lucide-react";
+import { ArrowLeft, Copy, Check, Download, FileDown, Loader2, Sparkles, RefreshCw, Link2, ScanSearch, ImageDown, Images, ChevronDown, ExternalLink, Film, Globe, FolderTree, ShieldCheck, Target, TrendingUp, Lightbulb, Tag, Store, Plus } from "lucide-react";
 import type { Bot } from "@/lib/bots";
 import { BotIcon } from "./BotIcon";
 import { cn } from "@/lib/utils";
