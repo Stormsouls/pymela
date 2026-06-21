@@ -125,6 +125,39 @@ export async function getItem(itemId: string, token: string): Promise<MlItem> {
   return mlFetch(`/items/${itemId}`, token);
 }
 
+// Mapea el dominio de MercadoLibre del país al site_id de la API.
+export function siteFromHost(host: string): string {
+  const h = (host || "").toLowerCase();
+  if (h.includes(".com.mx")) return "MLM";
+  if (h.includes(".com.br") || h.includes("mercadolivre")) return "MLB";
+  if (h.includes(".com.co")) return "MCO";
+  if (h.includes(".cl")) return "MLC";
+  if (h.includes(".com.uy")) return "MLU";
+  if (h.includes(".com.pe")) return "MPE";
+  if (h.includes(".com.ve")) return "MLV";
+  if (h.includes(".com.ec")) return "MEC";
+  if (h.includes(".com.bo")) return "MBO";
+  if (h.includes(".com.py")) return "MPY";
+  return "MLA"; // Argentina por defecto
+}
+
+// Busca publicaciones del mismo producto (search requiere token: anónimo da 403).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function searchItems(site: string, q: string, token: string, limit = 12): Promise<any[]> {
+  const data = await mlFetch(`/sites/${site}/search?q=${encodeURIComponent(q)}&limit=${limit}`, token);
+  return Array.isArray(data?.results) ? data.results : [];
+}
+
+// Descripción en texto plano de una publicación. Best-effort: devuelve "" si falla.
+export async function getItemDescription(itemId: string, token: string): Promise<string> {
+  try {
+    const d = await mlFetch(`/items/${itemId}/description`, token);
+    return (d?.plain_text || d?.text || "").trim();
+  } catch {
+    return "";
+  }
+}
+
 export async function postAnswer(questionId: number, text: string, token: string): Promise<void> {
   await mlFetch("/answers", token, {
     method: "POST",
