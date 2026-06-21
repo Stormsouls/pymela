@@ -700,6 +700,165 @@ export function BotForm({ bot }: { bot: Bot }) {
             </p>
           )}
 
+          {/* Análisis de competencia (FODA) — qué publican y opinan sobre productos iguales en ML */}
+          {(fodaLoading || foda) && (
+            <div className="mt-4 overflow-hidden rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-fuchsia-50">
+              <div className="flex items-center gap-2 border-b border-violet-100 px-4 py-3">
+                <Target className="h-4 w-4 text-violet-600" />
+                <p className="text-sm font-semibold text-violet-900">Análisis de la competencia (FODA)</p>
+                {fodaLoading && <Loader2 className="ml-auto h-3.5 w-3.5 animate-spin text-violet-400" />}
+              </div>
+
+              {fodaLoading && !foda && (
+                <p className="px-4 py-3 text-xs text-violet-700/80">
+                  Analizando qué publican y qué opinan los compradores sobre productos iguales en MercadoLibre…
+                </p>
+              )}
+
+              {/* Sin cuenta conectada o conexión vencida → CTA para conectar */}
+              {foda && foda.connected === false && (
+                <div className="px-4 py-4">
+                  <p className="text-sm text-violet-900">
+                    {foda.expired
+                      ? "Tu conexión con MercadoLibre venció. Reconectá tu cuenta para ver el análisis de la competencia."
+                      : "Conectá tu cuenta de MercadoLibre para ver qué publican tus competidores, sus precios y qué opinan los compradores."}
+                  </p>
+                  <Link
+                    href="/conectar-ml"
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-violet-700"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {foda.expired ? "Reconectar MercadoLibre" : "Conectar MercadoLibre"}
+                  </Link>
+                  <p className="mt-2 text-[11px] text-violet-700/70">Gratis. Solo lectura de publicaciones públicas para comparar tu producto.</p>
+                </div>
+              )}
+
+              {/* Conectado pero ML limitó el acceso al buscador */}
+              {foda && foda.connected && foda.available === false && (
+                <p className="px-4 py-4 text-sm text-violet-800/90">
+                  No pudimos traer la competencia en este momento (MercadoLibre limitó el acceso). Probá de nuevo en un rato.
+                </p>
+              )}
+
+              {/* Conectado, sin publicaciones similares */}
+              {foda && foda.connected && foda.available && foda.empty && (
+                <p className="px-4 py-4 text-sm text-violet-800/90">
+                  No encontramos publicaciones similares para comparar. Probá con una palabra clave más general.
+                </p>
+              )}
+
+              {/* Resultado con datos */}
+              {foda && foda.connected && foda.available && !foda.empty && (() => {
+                const f = foda.foda;
+                const fmt = (n: number) => new Intl.NumberFormat("es-AR").format(n);
+                const quadrants = [
+                  { label: "Fortalezas", items: f?.fortalezas, Icon: TrendingUp, box: "border-emerald-200 bg-emerald-50/70", head: "text-emerald-700", dot: "bg-emerald-500" },
+                  { label: "Debilidades", items: f?.debilidades, Icon: AlertTriangle, box: "border-rose-200 bg-rose-50/70", head: "text-rose-700", dot: "bg-rose-500" },
+                  { label: "Oportunidades", items: f?.oportunidades, Icon: Lightbulb, box: "border-sky-200 bg-sky-50/70", head: "text-sky-700", dot: "bg-sky-500" },
+                  { label: "Amenazas", items: f?.amenazas, Icon: ShieldAlert, box: "border-amber-200 bg-amber-50/70", head: "text-amber-700", dot: "bg-amber-500" },
+                ];
+                const ms = foda.marketStats;
+                return (
+                  <div className="space-y-3 px-4 py-4">
+                    {ms && (
+                      <div className="rounded-xl border border-violet-100 bg-white/70 px-3.5 py-2.5">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-violet-500">Precios del mercado</p>
+                        <p className="mt-1 text-sm text-zinc-800">
+                          <span className="font-semibold">{ms.moneda} {fmt(ms.min)}</span>
+                          <span className="text-zinc-400"> – </span>
+                          <span className="font-semibold">{ms.moneda} {fmt(ms.max)}</span>
+                          <span className="text-zinc-500"> · mediana </span>
+                          <span className="font-semibold text-violet-700">{ms.moneda} {fmt(ms.mediana)}</span>
+                          <span className="text-zinc-400"> ({ms.muestras} publicaciones)</span>
+                        </p>
+                      </div>
+                    )}
+
+                    {f?.resumen && <p className="text-sm leading-relaxed text-zinc-700">{f.resumen}</p>}
+
+                    {f && (
+                      <div className="grid gap-2.5 sm:grid-cols-2">
+                        {quadrants.map((qd) =>
+                          qd.items && qd.items.length > 0 ? (
+                            <div key={qd.label} className={cn("rounded-xl border p-3", qd.box)}>
+                              <p className={cn("flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide", qd.head)}>
+                                <qd.Icon className="h-3.5 w-3.5" /> {qd.label}
+                              </p>
+                              <ul className="mt-2 space-y-1.5">
+                                {qd.items.map((it, k) => (
+                                  <li key={k} className="flex gap-2 text-sm text-zinc-700">
+                                    <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", qd.dot)} />
+                                    <span>{it}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : null
+                        )}
+                      </div>
+                    )}
+
+                    {f?.keywords_top && f.keywords_top.length > 0 && (
+                      <div>
+                        <p className="flex items-center gap-1.5 text-xs font-semibold text-zinc-600"><Tag className="h-3.5 w-3.5 text-violet-500" /> Keywords que usan los que más venden</p>
+                        <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          {f.keywords_top.map((kw, k) => (
+                            <span key={k} className="rounded-full border border-violet-200 bg-white px-2.5 py-1 text-xs font-medium text-violet-700">{kw}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {f?.atributos_sugeridos && f.atributos_sugeridos.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-zinc-600">Atributos de ficha a completar para competir</p>
+                        <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          {f.atributos_sugeridos.map((at, k) => (
+                            <span key={k} className="rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-600">{at}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {f?.quejas_comunes && f.quejas_comunes.length > 0 && (
+                      <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Quejas frecuentes de compradores</p>
+                        <p className="text-[11px] text-amber-700/70">Adelantate: respondelas en tu descripción y FAQ.</p>
+                        <ul className="mt-2 space-y-1.5">
+                          {f.quejas_comunes.map((qj, k) => (
+                            <li key={k} className="flex gap-2 text-sm text-zinc-700">
+                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                              <span>{qj}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {f?.recomendaciones && f.recomendaciones.length > 0 && (
+                      <div className="rounded-xl border border-violet-100 bg-white/70 p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">Qué hacer para superarlos</p>
+                        <ul className="mt-2 space-y-1.5">
+                          {f.recomendaciones.map((rc, k) => (
+                            <li key={k} className="flex gap-2 text-sm text-zinc-800">
+                              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-600" />
+                              <span>{rc}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {!f && (
+                      <p className="text-sm text-violet-800/90">Trajimos los precios de la competencia, pero el análisis detallado no está disponible ahora. Probá «Otra versión» en un momento.</p>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
           <div className="mt-4 flex flex-wrap gap-2.5">
             <button
               onClick={copy}
