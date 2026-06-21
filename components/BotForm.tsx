@@ -422,6 +422,7 @@ export function BotForm({ bot }: { bot: Bot }) {
     setError(null);
     setEnrichResult(null);
     setEnrichError(null);
+    setFoda(null);
   }
 
   async function downloadImage(imgUrl: string, index: number) {
