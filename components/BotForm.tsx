@@ -318,7 +318,7 @@ export function BotForm({ bot }: { bot: Bot }) {
             }),
           })
             .then((r) => (r.ok ? r.json() : null))
-            .then((d) => { if (d) setFoda(d as FodaResponse); })
+            .then((d) => { if (d) setFoda(d as CompetitionResponse); })
             .catch(() => { /* sin análisis: no rompe nada */ })
             .finally(() => setFodaLoading(false));
         }
