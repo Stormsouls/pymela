@@ -195,6 +195,41 @@ Auditoría SEO ML 2026 + reescritura completa. Deployado a prod y verificado end
   categoría aclara "confirmala al publicar". Protege sin ser brusco. NO va en el texto copiable
   (no ensucia la publicación), solo en la UI.
 
+## Bot descripciones ML — análisis de competencia FODA + fix scope OAuth (2026-06-21)
+- **`/api/competitors` (NUEVO)**: dado `{q, host, mine}` busca publicaciones del mismo producto
+  en ML, lee descripciones + reseñas + preguntas de los top y arma un **FODA** con Groq
+  (fortalezas/debilidades/oportunidades/amenazas + keywords_top + atributos_sugeridos +
+  quejas_comunes + recomendaciones). Precios (min/max/mediana) se calculan en código (sin tokens).
+  Requiere cuenta ML conectada (search exige token). Degrada con elegancia: devuelve
+  `{connected:false}` sin cookie, `{connected:false, expired:true}` si el token no refresca,
+  `{available:false}` si ML bloquea el search, `{empty:true}` sin resultados.
+- **Helpers nuevos en `lib/ml-api.ts`**: `siteFromHost` (exportado), `searchItems`,
+  `getItemDescription` (best-effort, "" si falla).
+- **UI `BotForm.tsx`**: tarjeta violeta "Análisis de la competencia (FODA)" post-generación,
+  fire-and-forget (no bloquea), gated a descripciones+plataforma Mercado. Grilla 2×2 de
+  cuadrantes con colores, banda de precios del mercado, chips de keywords/atributos, lista de
+  quejas y recomendaciones. Si no hay cuenta conectada → CTA a /conectar-ml.
+- **🔴 BUG CRÍTICO encontrado y arreglado — scope OAuth**: `buildAuthUrl` (`lib/ml-api.ts`)
+  NO pedía `scope`, así que ML **nunca devolvía refresh_token** → callback guardaba `encrypt("")`
+  → los tokens morían a las **6h sin poder refrescarse**. Rompía en silencio: fotos de ML,
+  webhook de respuestas automáticas Y este feature. Fix: `scope: "offline_access read write"`.
+  Verificado en DB: las 2 conexiones existentes (GISE_CALAMAR, MUEBLESDELSUR) tienen
+  `refresh_token` vacío y access tokens vencidos (06-06 y 06-11). **ACCIÓN PENDIENTE DEL USUARIO**:
+  reconectar la cuenta en /conectar-ml (ahora pedirá offline_access) para (a) fijar tokens
+  persistentes y (b) habilitar FODA/fotos. Sin reconexión el feature muestra el CTA de conectar.
+- **Hallazgos API ML (test con app-token client_credentials, scope read)**:
+  - `/questions/search?item_id=X&api_version=4` → **200** (funciona con token; útil para Q&A).
+  - `/sites/{site}/search`, `/items/{id}/description`, `/reviews/item/{id}` → **403 PolicyAgent**
+    con app-token. `/items/{id}` (getItem) SÍ anda en prod con user-token (feature de fotos), así
+    que estos 403 son probablemente del app-token; **sin confirmar con user-token reconectado**.
+    Si search queda bloqueado para user-token, el feature mostrará `available:false` (no rompe).
+  - Anónimo: search/reviews/questions todos 403.
+- **Cómo testear search-with-token localmente**: el token de las conexiones está cifrado en
+  Supabase (`ml_connections`); `ML_APP_ID`/`ML_CLIENT_SECRET` NO están en `.env.local`, traerlos
+  con `vercel env pull .env.vercel --environment=production`. App-token: POST /oauth/token con
+  `grant_type=client_credentials`. ML rate-limita el endpoint de token (429) si se abusa.
+- Deployado a prod (https://pymela.vercel.app), build limpio, smoke test `{connected:false}` OK.
+
 ## Estado actual (al cierre — 2026-05-31)
 ✅ Scaffolding Next.js 16 + Tailwind v4 + deps instaladas
 ✅ Registro de 5 bots + prompts LatAm + form dinámico
