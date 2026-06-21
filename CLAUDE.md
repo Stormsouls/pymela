@@ -240,6 +240,34 @@ Auditoría SEO ML 2026 + reescritura completa. Deployado a prod y verificado end
 - Deployado a prod (https://pymela.vercel.app), build limpio, E2E con cookie firmada OK
   (connected:true + marcas + analisis para "anillo inteligente").
 
+## Bot descripciones ML — competencia: popup OAuth + peso exacto + skill (2026-06-21 b)
+- **#1 Conectar ML sin salir de la página** (`BotForm.tsx`): el CTA ya NO navega a /conectar-ml
+  ni abre pestaña. `connectMlPopup()` abre un **popup** (`window.open` 520×680) a `/api/ml/auth`,
+  sondea `/api/ml/status` cada 2s y, al detectar `ml_user_id`, cierra el popup y re-corre el
+  análisis solo (`runCompetitors()`). Si el popup está bloqueado, cae a `_blank`. La cookie
+  firmada se comparte por dominio entre popup y opener, así el status la ve al volver.
+- **#2 Peso a coincidencias EXACTAS** (`/api/competitors`): se extrae marca+modelo del producto
+  del usuario (`mine.marca`/`mine.producto`, regex de código tipo R02/A54) y se clasifica cada
+  producto del catálogo en tier2=EXACTO (misma marca Y modelo), tier1=parecido, tier0=otro.
+  Se ordena exactos primero, se separan en el prompt ("EXACTAMENTE TU PRODUCTO" vs "PARECIDOS")
+  y se instruye a Groq a darles mucho más peso. Devuelve `exactCount`; la UI muestra "N
+  publicaciones iguales a tu producto (mismo modelo) — pesan más". `BotForm` ahora manda
+  `mine.marca`. Verificado E2E en prod: Colmi R02 → exactCount 12, análisis enfocado en R02.
+- **#3/#4 Skill `ml-competencia`** (`C:\Users\storm\.claude\skills\ml-competencia\SKILL.md`,
+  GLOBAL no del proyecto): análisis profundo de competencia ML que corre en la sesión de Claude
+  (no en la app), pensado para que el usuario venda en ML. Estrategia multi-fuente: catálogo ML
+  (specs/marcas) + búsqueda web (precios) + Nimble extract (descripciones/opiniones, con tuning).
+- **🔎 Realidad de Nimble en esta cuenta (probado en vivo, NO es lo mejor of the box)**:
+  - `nimble extract --render` sobre `listado.mercadolibre.*` y `/p/...` → **cae en el interstitial
+    anti-bot de ML** (status success pero contenido = micro-landing, sin precios). Crackeable con
+    sesiones/browser-actions/network-capture, pero necesita iteración.
+  - `nimble search` (web WSA) → **403 enterprise-only**. `nimble serp run --search-engine google`
+    → 400 "search_engine isn't supported". No son confiables en este plan.
+  - **Conclusión**: para precios/opiniones de ML conviene WebSearch/WebFetch nativos de Claude
+    (no gateados) + Nimble extract afinado. La recomendación al usuario: el skill es mejor que la
+    app para SU uso personal (tengo más herramientas y razonamiento), pero ML pelea fuerte y el
+    scraping hay que afinarlo en vivo. La app sigue siendo la versión gratis/escalable (catálogo).
+
 ## Estado actual (al cierre — 2026-05-31)
 ✅ Scaffolding Next.js 16 + Tailwind v4 + deps instaladas
 ✅ Registro de 5 bots + prompts LatAm + form dinámico
