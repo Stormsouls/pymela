@@ -37,6 +37,25 @@ async function safeJson(res: Response): Promise<any> {
 
 type Section = { title: string; body: string };
 
+type FodaResponse = {
+  connected: boolean;
+  available?: boolean;
+  expired?: boolean;
+  empty?: boolean;
+  marketStats?: { min: number; max: number; mediana: number; moneda: string; muestras: number } | null;
+  foda?: {
+    resumen?: string;
+    fortalezas?: string[];
+    debilidades?: string[];
+    oportunidades?: string[];
+    amenazas?: string[];
+    keywords_top?: string[];
+    atributos_sugeridos?: string[];
+    quejas_comunes?: string[];
+    recomendaciones?: string[];
+  } | null;
+};
+
 function parseSections(text: string): Section[] {
   const sections: Section[] = [];
   let current: Section | null = null;
