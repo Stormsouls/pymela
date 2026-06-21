@@ -122,6 +122,8 @@ export function BotForm({ bot }: { bot: Bot }) {
   const [enrichError, setEnrichError] = useState<string | null>(null);
   const [categoryPath, setCategoryPath] = useState<{ path: string[]; domain?: string } | null>(null);
   const [categoryLoading, setCategoryLoading] = useState(false);
+  const [fodaLoading, setFodaLoading] = useState(false);
+  const [foda, setFoda] = useState<FodaResponse | null>(null);
 
   const { user, isAnon, signInWithEmail } = useAuth();
   const { saveGeneration } = useHistory();
