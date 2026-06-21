@@ -141,21 +141,30 @@ export function siteFromHost(host: string): string {
   return "MLA"; // Argentina por defecto
 }
 
-// Busca publicaciones del mismo producto (search requiere token: anónimo da 403).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function searchItems(site: string, q: string, token: string, limit = 12): Promise<any[]> {
-  const data = await mlFetch(`/sites/${site}/search?q=${encodeURIComponent(q)}&limit=${limit}`, token);
-  return Array.isArray(data?.results) ? data.results : [];
-}
+export type CatalogAttr = { id?: string; name?: string; value_name?: string };
+export type CatalogProduct = {
+  id: string;
+  name?: string;
+  domain_id?: string;
+  attributes?: CatalogAttr[];
+};
 
-// Descripción en texto plano de una publicación. Best-effort: devuelve "" si falla.
-export async function getItemDescription(itemId: string, token: string): Promise<string> {
-  try {
-    const d = await mlFetch(`/items/${itemId}/description`, token);
-    return (d?.plain_text || d?.text || "").trim();
-  } catch {
-    return "";
-  }
+// Busca productos en el CATÁLOGO de ML (`/products/search`). A diferencia de
+// `/sites/{site}/search` (bloqueado por PolicyAgent → 403 aun con token), este
+// endpoint sí responde con token e incluye nombre + marca/modelo/atributos.
+// ⚠ NO trae precios ni ofertas (buy_box_winner llega null para esta app) ni
+// reseñas (también 403): ML los reserva. Para esos datos hay que scrapear la web.
+export async function searchCatalogProducts(
+  site: string,
+  q: string,
+  token: string,
+  limit = 12
+): Promise<CatalogProduct[]> {
+  const data = await mlFetch(
+    `/products/search?site_id=${site}&status=active&q=${encodeURIComponent(q)}&limit=${limit}`,
+    token
+  );
+  return Array.isArray(data?.results) ? data.results : [];
 }
 
 export async function postAnswer(questionId: number, text: string, token: string): Promise<void> {
