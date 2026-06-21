@@ -339,6 +339,55 @@ export function BotForm({ bot }: { bot: Bot }) {
     await runGenerate(next);
   }
 
+  // Análisis de competencia: productos parecidos del catálogo de ML + Groq.
+  // Da más peso a los productos EXACTAMENTE iguales (misma marca/modelo).
+  function runCompetitors() {
+    const q = `${values.keyword || values.producto || ""} ${values.marca || ""}`.trim();
+    if (!q) return;
+    setFodaLoading(true);
+    fetch("/api/competitors", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        q,
+        host: mlHost,
+        mine: {
+          producto: values.producto,
+          keyword: values.keyword,
+          caracteristicas: values.caracteristicas,
+          marca: values.marca,
+        },
+      }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d) setFoda(d as CompetitionResponse); })
+      .catch(() => { /* sin análisis: no rompe nada */ })
+      .finally(() => setFodaLoading(false));
+  }
+
+  // Conectar ML en una ventanita (popup), SIN sacar al usuario de la página ni abrir
+  // otra pestaña. Cuando la cuenta queda conectada, cerramos el popup y re-corremos
+  // el análisis automáticamente.
+  function connectMlPopup() {
+    const w = window.open("/api/ml/auth", "pymela_ml_oauth", "width=520,height=680");
+    if (!w) { window.open("/api/ml/auth", "_blank"); return; } // popup bloqueado → pestaña
+    const start = Date.now();
+    const timer = setInterval(async () => {
+      if (w.closed || Date.now() - start > 180000) { clearInterval(timer); return; }
+      try {
+        const r = await fetch("/api/ml/status");
+        if (r.ok) {
+          const d = await r.json();
+          if (d && d.ml_user_id) {
+            clearInterval(timer);
+            try { w.close(); } catch { /* el popup ya se cerró */ }
+            runCompetitors();
+          }
+        }
+      } catch { /* seguir sondeando */ }
+    }, 2000);
+  }
+
   // Busca specs reales en la web para completar la ficha (sin inventar).
   async function enrichFicha(fichaBody: string) {
     setEnrichLoading(true);
