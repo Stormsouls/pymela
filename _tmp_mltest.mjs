@@ -2,12 +2,15 @@ import { createClient } from "@supabase/supabase-js";
 import { createDecipheriv } from "crypto";
 import fs from "fs";
 
-// cargar .env.local manualmente
-const env = Object.fromEntries(
-  fs.readFileSync(".env.local", "utf8").split("\n")
-    .filter((l) => l.includes("=") && !l.trim().startsWith("#"))
-    .map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; })
-);
+// cargar .env.local + .env.vercel manualmente
+function loadEnv(path) {
+  return Object.fromEntries(
+    fs.readFileSync(path, "utf8").split("\n")
+      .filter((l) => l.includes("=") && !l.trim().startsWith("#"))
+      .map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^"|"$/g, "")]; })
+  );
+}
+const env = { ...loadEnv(".env.vercel"), ...loadEnv(".env.local") };
 
 function decrypt(value) {
   if (!value || !value.startsWith("v1:")) return value;
