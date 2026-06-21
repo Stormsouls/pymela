@@ -305,6 +305,24 @@ export function BotForm({ bot }: { bot: Bot }) {
             .then((d) => { if (d && Array.isArray(d.path) && d.path.length) setCategoryPath({ path: d.path, domain: d.domain }); })
             .catch(() => { /* sin categoría: no rompe nada */ })
             .finally(() => setCategoryLoading(false));
+
+          // Análisis de competencia (FODA): busca publicaciones del mismo producto,
+          // lee descripciones + reseñas/preguntas y arma un FODA. Requiere cuenta ML
+          // conectada (search exige token). Fire-and-forget: no bloquea el resultado.
+          setFodaLoading(true);
+          fetch("/api/competitors", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              q,
+              host: mlHost,
+              mine: { producto: values.producto, keyword: values.keyword, caracteristicas: values.caracteristicas },
+            }),
+          })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((d) => { if (d) setFoda(d as FodaResponse); })
+            .catch(() => { /* sin análisis: no rompe nada */ })
+            .finally(() => setFodaLoading(false));
         }
       }
       // Guardar en historial si el usuario tiene sesión
