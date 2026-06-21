@@ -757,16 +757,15 @@ export function BotForm({ bot }: { bot: Bot }) {
                       ? "Tu conexión con MercadoLibre venció. Reconectá tu cuenta para ver con qué productos competís."
                       : "Conectá tu cuenta de MercadoLibre para ver con qué marcas y productos vas a competir."}
                   </p>
-                  <a
-                    href="/conectar-ml"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
+                    onClick={connectMlPopup}
                     className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-violet-700"
                   >
                     <Sparkles className="h-3.5 w-3.5" />
                     {foda.expired ? "Reconectar MercadoLibre" : "Conectar MercadoLibre"}
-                  </a>
-                  <p className="mt-2 text-[11px] text-violet-700/70">Se abre en otra pestaña: no perdés lo que estás haciendo acá. Es gratis y solo lee información pública.</p>
+                  </button>
+                  <p className="mt-2 text-[11px] text-violet-700/70">Se abre una ventanita para autorizar: no perdés lo que estás haciendo acá y el análisis aparece solo al conectar. Es gratis y solo lee información pública.</p>
                 </div>
               )}
 
