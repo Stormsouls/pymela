@@ -139,6 +139,10 @@ export function buildAuthUrl(state: string): string {
     response_type: "code",
     client_id: APP_ID,
     redirect_uri: "https://pymela.vercel.app/api/ml/callback",
+    // offline_access es OBLIGATORIO para que ML devuelva refresh_token. Sin este
+    // scope los tokens vencen a las 6h y no se pueden refrescar (rompía fotos,
+    // webhook y análisis de competencia). read/write para leer items y responder.
+    scope: "offline_access read write",
     state,
   });
   return `https://auth.mercadolibre.com.ar/authorization?${params}`;
