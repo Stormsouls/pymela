@@ -798,6 +798,11 @@ export function BotForm({ bot }: { bot: Bot }) {
                     {(marcas.length > 0 || (a?.competencia && a.competencia.length > 0)) && (
                       <div className="rounded-xl border border-violet-100 bg-white/70 p-3">
                         <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-violet-600"><Store className="h-3.5 w-3.5" /> Con quién competís</p>
+                        {!!foda.exactCount && foda.exactCount > 0 && (
+                          <p className="mt-1 text-[11px] font-medium text-emerald-700">
+                            ✓ {foda.exactCount} {foda.exactCount === 1 ? "publicación igual" : "publicaciones iguales"} a tu producto (mismo modelo) — pesan más en el análisis.
+                          </p>
+                        )}
                         {marcas.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-1.5">
                             {marcas.map((m, k) => (
