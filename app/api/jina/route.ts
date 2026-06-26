@@ -35,7 +35,9 @@ const BLOCKED_HOSTS = [
 const EXCLUDE_KEYWORDS = [
   "favicon", "sprite", "pixel", "tracking", "badge", "1x1", "placeholder",
   "blank", "_ttd_", "logo", "icon", "ico_", "flag", "bandera", "avatar",
-  "emoji", "payment", "visa", "mastercard", "paypal", "mercadopago", "amex",
+  "emoji", "payment", "pay-", "-pay", "visa", "mastercard", "paypal", "mercadopago",
+  "amex", "discover", "maestro", "oxxo", "boleto", "tarjeta", "trade-assurance",
+  "tradeassurance", "alibaba-guaranteed", "secure-payment", "trust-",
   "diners", "social-", "whatsapp", "facebook", "instagram", "twitter",
   "tiktok", "youtube-icon", "share-", "btn-", "button", "arrow-", "chevron",
   "close-", "menu-", "hamburger", "search-icon", "cart-icon", "user-icon",
