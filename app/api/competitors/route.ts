@@ -51,11 +51,49 @@ export async function POST(req: NextRequest) {
   }
 
   const site = siteFromHost(body.host ?? "");
+  const mine = body.mine ?? {};
+
+  // Tokens del producto del vendedor para detectar coincidencias EXACTAS (misma marca/modelo)
+  // y para poder ampliar la búsqueda si el modelo exacto no figura en el catálogo.
+  const norm = (s: string) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const mineText = norm(`${mine.marca ?? ""} ${mine.producto ?? ""} ${mine.keyword ?? ""}`);
+  const mineBrand = norm(mine.marca ?? "").split(/\s+/).filter((w) => w.length > 2)[0] ?? "";
+  const mineModels = Array.from(
+    new Set(mineText.match(/\b[a-z]{1,4}\d{1,4}[a-z]?\b|\b\d{2,4}[a-z]{1,3}\b/g) ?? [])
+  ).filter((m) => m.length >= 2);
+
+  // Query genérica: saca marca, código de modelo y palabras vacías del término de
+  // búsqueda. Muchísimos productos (marcas chinas, modelos nuevos) NO están en el
+  // catálogo curado de ML con su modelo exacto, pero la CATEGORÍA sí tiene productos
+  // para comparar (ej: "anillo yawell r09" → "anillo inteligente"). Sin esto, el
+  // catálogo devuelve 0 y mostrábamos "no hay competencia" cuando sí la hay.
+  const stop = new Set(["de", "para", "con", "el", "la", "los", "las", "un", "una", "y", "o", "del", "al"]);
+  const brandToks = new Set(norm(mine.marca ?? "").split(/\s+/).filter(Boolean));
+  const modelToks = new Set(mineModels);
+  const generic = Array.from(
+    new Set(
+      norm(`${mine.keyword || ""} ${mine.producto || ""}`)
+        .split(/\s+/)
+        .filter((w) => w && !stop.has(w) && !brandToks.has(w) && !modelToks.has(w) && !/\d/.test(w))
+    )
+  )
+    .slice(0, 5)
+    .join(" ")
+    .trim();
 
   // Buscar productos del mismo tipo en el catálogo de ML.
   let products: CatalogProduct[] = [];
   try {
     products = await searchCatalogProducts(site, q, token, 15);
+    // Pocos (o ningún) resultado con el modelo exacto → ampliar al término genérico de
+    // la categoría para igual mostrar el mercado. Se mergea sin duplicar (exactos primero).
+    if (products.length < 5 && generic && norm(generic) !== norm(q)) {
+      try {
+        const more = await searchCatalogProducts(site, generic, token, 15);
+        const seen = new Set(products.map((p) => p.id));
+        for (const p of more) if (!seen.has(p.id)) { seen.add(p.id); products.push(p); }
+      } catch { /* la búsqueda amplia es best-effort */ }
+    }
   } catch {
     // ML bloqueó el acceso para esta cuenta o site.
     return NextResponse.json({ connected: true, available: false });
@@ -64,16 +102,6 @@ export async function POST(req: NextRequest) {
   if (products.length === 0) {
     return NextResponse.json({ connected: true, available: true, empty: true, analisis: null });
   }
-
-  const mine = body.mine ?? {};
-
-  // Tokens del producto del vendedor para detectar coincidencias EXACTAS (misma marca/modelo).
-  const norm = (s: string) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-  const mineText = norm(`${mine.marca ?? ""} ${mine.producto ?? ""} ${mine.keyword ?? ""}`);
-  const mineBrand = norm(mine.marca ?? "").split(/\s+/).filter((w) => w.length > 2)[0] ?? "";
-  const mineModels = Array.from(
-    new Set(mineText.match(/\b[a-z]{1,4}\d{1,4}[a-z]?\b|\b\d{2,4}[a-z]{1,3}\b/g) ?? [])
-  ).filter((m) => m.length >= 2);
 
   // Normalizar + clasificar cada producto del catálogo (exacto vs parecido).
   const comps = products.slice(0, 14).map((p) => {
