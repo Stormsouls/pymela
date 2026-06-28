@@ -469,14 +469,43 @@ export function BotForm({ bot }: { bot: Bot }) {
     a.click();
   }
 
+  // Descarga TODAS las fotos en un único .zip. Trae cada imagen por el proxy /api/img
+  // (resuelve CORS/SSRF), las mete en un zip en el browser y descarga un solo archivo.
   async function downloadAllImages() {
     setDownloadingAll(true);
-    for (let i = 0; i < scrapedImages.length; i++) {
-      await downloadImage(scrapedImages[i], i);
-      // Pequeño delay para que el browser no bloquee múltiples descargas
-      await new Promise((r) => setTimeout(r, 400));
+    try {
+      const zip = new JSZip();
+      let added = 0;
+      await Promise.all(
+        scrapedImages.map(async (imgUrl, i) => {
+          const ext = imgUrl.split("?")[0].split(".").pop()?.toLowerCase() || "jpg";
+          const filename = `${bot.slug}-foto-${i + 1}.${ext}`;
+          try {
+            const res = await fetch(`/api/img?url=${encodeURIComponent(imgUrl)}&filename=${encodeURIComponent(filename)}`);
+            if (!res.ok) return;
+            zip.file(filename, await res.blob());
+            added++;
+          } catch { /* foto que falla → se omite del zip */ }
+        })
+      );
+      if (added === 0) {
+        // Ninguna foto se pudo traer → caemos a la descarga individual como respaldo.
+        for (let i = 0; i < scrapedImages.length; i++) {
+          await downloadImage(scrapedImages[i], i);
+          await new Promise((r) => setTimeout(r, 400));
+        }
+        return;
+      }
+      const blob = await zip.generateAsync({ type: "blob" });
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = `${bot.slug}-fotos.zip`;
+      a.click();
+      URL.revokeObjectURL(href);
+    } finally {
+      setDownloadingAll(false);
     }
-    setDownloadingAll(false);
   }
 
   const left = usesLeft();
