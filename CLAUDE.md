@@ -268,6 +268,50 @@ Auditoría SEO ML 2026 + reescritura completa. Deployado a prod y verificado end
     app para SU uso personal (tengo más herramientas y razonamiento), pero ML pelea fuerte y el
     scraping hay que afinarlo en vivo. La app sigue siendo la versión gratis/escalable (catálogo).
 
+## Bot descripciones ML — formato sin emojis + funciones visibles + fixes (2026-06-28)
+Sesión de pulido del bot descripciones a partir de pruebas reales con el anillo Yawell R09
+(link de Alibaba). Cambios deployados a prod:
+- **🔴 ML rechaza emojis y HTML en la descripción** ("No podés usar HTML ni emojis"). El formato
+  con emojis (💍✅🔹) rompía la publicación. Ahora el branch **MercadoLibre** de `descripciones()`
+  (`lib/prompts.ts`) genera **TEXTO PLANO sin emojis**: títulos de sección en MAYÚSCULAS entre dos
+  líneas separadoras de `=` IDÉNTICAS (37 signos, copiadas tal cual arriba y abajo — más estético),
+  viñetas con guion `-`. Tildes y ñ SÍ se permiten (ML las acepta; lo único prohibido es emoji/HTML).
+  El branch **Instagram/Facebook** sigue con emojis (ahí funcionan y venden).
+- **Funciones arriba y visibles**: nueva sección "TODO LO QUE HACE" como PRIMER bloque tras el
+  título (una función por línea con guion) — antes quedaban enterradas en CARACTERÍSTICAS TÉCNICAS.
+  Luego "POR QUÉ ELEGIRLO" (beneficios/por qué conviene, sin repetir funciones) y "CARACTERÍSTICAS
+  TÉCNICAS" (datos duros). Secciones OPCIONALES agregadas (solo si hay base real): "PARA QUIÉN ES"
+  y "CÓMO EMPEZAR".
+- **🔴 Anti-invención de negativos** (`NO_INVENTAR` en `lib/prompts.ts`): el bot afirmaba "No es
+  compatible con Android" cuando solo había extraído "iOS". Regla nueva: PROHIBIDO afirmar que el
+  producto NO tiene/NO es compatible/NO sirve por ausencia de dato. La FAQ no puede negar
+  compatibilidad por falta de datos. Para SO/compatibilidad, mencionar solo lo confirmado sin negar
+  el resto.
+- **Extracción de specs completa** (`extractWithGroq` en `app/api/scrape/route.ts`): max_tokens
+  800→1600. Ahora captura TODA la tabla de specs como pares "Atributo: Valor" (no resume), y
+  preserva TODAS las plataformas de compatibilidad (ej: "Android y iOS", nunca recorta a una).
+  Aun así, Alibaba/AliExpress son SPAs pesadas con anti-bot: Jina a veces no renderiza la tabla
+  "Descripción del producto" → para esos huecos usar el botón "Buscar más specs en internet" (enrich).
+- **Competencia: fallback genérico** (`app/api/competitors/route.ts`): el catálogo de ML
+  (`/products/search`) solo trae productos de catálogo curado; marcas chinas (Yawell R09) no están →
+  daba 0 = "no hay competencia" (falso, hay muchas publicaciones). Ahora si la búsqueda exacta trae
+  <5 resultados, hace una 2ª búsqueda con el término GENÉRICO (saca marca + código de modelo:
+  "anillo yawell r09" → "anillo inteligente") y mergea sin duplicar. Igual que siempre: ML NO expone
+  por API precios ni reseñas de competidores.
+- **Fotos: menos logos de pago** (`app/api/jina/route.ts`): con 2+ fotos del CDN del producto se
+  devuelven SOLO esas (las "secondary" son logos PayPal/Visa, badges de confianza, banners). Sumadas
+  keywords de filtrado (paypal/visa/discover/maestro/oxxo/trade-assurance/secure-payment, etc.).
+  Limitación: un logo servido desde el CDN del producto con nombre hasheado puede colarse igual.
+- **Descargar todas las fotos = .zip** (`components/BotForm.tsx` + dep `jszip`): "Descargar todas"
+  baja un único `descripciones-fotos.zip` (trae cada foto por `/api/img`, zipa en el browser).
+  Fallback a descarga individual si ninguna foto se pudo traer.
+- **Guía de tallas de anillos (AR)**: infografía SVG (2 métodos de medición + tabla talle US /
+  diámetro mm / circunferencia mm / nº de aro arg = circunf−40 + tips). Se generó como imagen para
+  la publicación (PNG vía Playwright screenshot de HTML autocontenido servido por http local, porque
+  `file://` está bloqueado en el Playwright MCP). NO es parte de la app, es un entregable visual.
+- Regla de estética ML aprendida: el golpe visual en ML lo dan FOTOS + TÍTULO + FICHA TÉCNICA; la
+  descripción va limpia y escaneable en texto plano. No pelear contra el editor de ML con formato.
+
 ## Estado actual (al cierre — 2026-05-31)
 ✅ Scaffolding Next.js 16 + Tailwind v4 + deps instaladas
 ✅ Registro de 5 bots + prompts LatAm + form dinámico
