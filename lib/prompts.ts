@@ -17,7 +17,11 @@ const BASE =
 const NO_INVENTAR =
   "REGLA DE FIDELIDAD: usá ÚNICAMENTE los datos que te dio el usuario. " +
   "NUNCA inventes especificaciones, medidas, materiales, autonomía, garantía ni certificaciones que no estén en los datos. " +
-  "Si un dato falta, OMITILO: no lo inventes ni dejes marcadores como [completar] o N/A en el texto final. ";
+  "Si un dato falta, OMITILO: no lo inventes ni dejes marcadores como [completar] o N/A en el texto final. " +
+  "PROHIBIDO AFIRMAR NEGATIVOS: la ausencia de un dato NO significa que el producto NO tenga esa característica. " +
+  "NUNCA afirmes que el producto NO es compatible con algo, NO incluye algo o NO sirve para algo solo porque ese dato no aparece. " +
+  "Ejemplo: si los datos dicen 'compatible con iOS' pero no mencionan Android, NO escribas 'no es compatible con Android' — simplemente no opines sobre Android. " +
+  "Para compatibilidad/sistema operativo: mencioná SOLO las plataformas que los datos confirman, sin negar las demás. ";
 
 function descripciones(v: Values): PromptSpec {
   const esInstagram = v.plataforma?.toLowerCase().includes("instagram") || v.plataforma?.toLowerCase().includes("facebook");
