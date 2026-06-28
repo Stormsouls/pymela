@@ -160,6 +160,8 @@ ${v.caracteristicas?.match(/incluye|caja|paquete|trae|viene con|kit|estuche|cabl
 
 ${v.condicion !== "Nuevo" ? 'Sección "ESTADO DEL PRODUCTO" — descripción honesta del estado real, marcas de uso y qué se entrega\n\n' : ""}Sección "PREGUNTAS FRECUENTES" — 3 a 5 preguntas típicas de compradores de este producto con su respuesta breve (1-2 líneas), basadas SOLO en los datos provistos. NO incluyas preguntas cuya respuesta sea NEGAR una compatibilidad o característica por falta de datos (ej: si no está confirmado que funcione SOLO con iOS, NO pongas "¿Es compatible con Android? No"). Solo preguntas que puedas responder con un dato real y afirmativo.
 
+Sección "COMPRÁ CON CONFIANZA" — 2-3 líneas con guion que transmitan respaldo y tranquilidad: producto listo para enviar, atención por el chat de la publicación, y la garantía SI fue indicada en los datos comerciales. PROHIBIDO incluir teléfonos, WhatsApp, emails, redes, URLs o mencionar otras plataformas (ML suspende la publicación). No inventes beneficios que no estén respaldados (no prometas factura, envío gratis ni cuotas si no figuran en los datos).
+
 Cierre de 1 línea invitando a consultar por el chat de la publicación.
 
 IMPORTANTE: PROHIBIDO usar emojis o iconos en cualquier parte de la descripción (ML los rechaza). No escribas un encabezado de sección si no tenés contenido real para esa sección.]
