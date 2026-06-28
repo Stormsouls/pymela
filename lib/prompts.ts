@@ -154,6 +154,8 @@ Sección "POR QUÉ ELEGIRLO" — 2-4 beneficios clave (uno por línea con guion)
 
 Sección "CARACTERÍSTICAS TÉCNICAS" — los datos duros, uno por línea con guion (material, batería, conectividad, compatibilidad, etc.). NO repitas las funciones ya listadas.
 
+Secciones OPCIONALES (mismo formato de título entre '='; incluilas SOLO si aportan y tienen base real en los datos, NUNCA las inventes): "PARA QUIÉN ES" (a quién le sirve y en qué situaciones: deportistas, viajeros, adultos mayores, trabajo, etc., para que el comprador se identifique) y "CÓMO EMPEZAR" (2-4 pasos simples de uso/configuración cuando el producto lo requiere, ej: descargar la app, vincular por Bluetooth, cargar antes del primer uso).
+
 ${v.caracteristicas?.match(/incluye|caja|paquete|trae|viene con|kit|estuche|cable|cargador|manual/i) ? 'Sección "CONTENIDO DEL PAQUETE" — listá con guiones SOLO lo que los datos dicen que incluye\n\n' : ""}${v.garantia?.trim() ? 'Sección "GARANTÍA" — escribí en una línea la garantía indicada en los datos comerciales\n\n' : ""}Sección "PAGO Y ENVÍO" — una sección breve combinada, según los datos comerciales de arriba
 
 ${v.condicion !== "Nuevo" ? 'Sección "ESTADO DEL PRODUCTO" — descripción honesta del estado real, marcas de uso y qué se entrega\n\n' : ""}Sección "PREGUNTAS FRECUENTES" — 3 a 5 preguntas típicas de compradores de este producto con su respuesta breve (1-2 líneas), basadas SOLO en los datos provistos. NO incluyas preguntas cuya respuesta sea NEGAR una compatibilidad o característica por falta de datos (ej: si no está confirmado que funcione SOLO con iOS, NO pongas "¿Es compatible con Android? No"). Solo preguntas que puedas responder con un dato real y afirmativo.
