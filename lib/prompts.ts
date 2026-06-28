@@ -138,7 +138,12 @@ TÍTULOS ALTERNATIVOS
 2. [variante long-tail, máximo 60 caracteres, apuntando a una búsqueda más específica]
 
 DESCRIPCIÓN
-[Esquema en TEXTO PLANO, SIN NINGÚN EMOJI ni icono. Usá tildes y ñ con normalidad (ML las acepta; lo único prohibido son emojis y HTML). Para los títulos de sección usá MAYÚSCULAS entre dos líneas de signos '=' (ej: una línea "=====", luego "TODO LO QUE HACE", luego otra "====="). Para las viñetas usá un guion '-' al inicio de cada línea.
+[Esquema en TEXTO PLANO, SIN NINGÚN EMOJI ni icono. Usá tildes y ñ con normalidad (ML las acepta; lo único prohibido son emojis y HTML). Para los títulos de sección usá MAYÚSCULAS entre dos líneas separadoras de signos '=' IDÉNTICAS (mismo largo exacto arriba y abajo). Usá SIEMPRE esta misma línea separadora, copiada TAL CUAL arriba y abajo de CADA título (son 37 signos '='): =====================================
+Ejemplo de cómo debe verse una sección:
+=====================================
+TODO LO QUE HACE
+=====================================
+Para las viñetas usá un guion '-' al inicio de cada línea.
 
 Primera línea: el producto en MAYÚSCULAS con la palabra clave principal (ej: ANILLO INTELIGENTE YAWELL R09 - MONITOR DE SALUD). Sin emojis.
 Luego 2-3 líneas que repiten la palabra clave principal y venden el beneficio central.
