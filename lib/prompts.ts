@@ -143,9 +143,11 @@ DESCRIPCIÓN
 Primera línea: palabra clave principal + producto en mayúsculas con UN emoji (ej: 💍 ANILLO INTELIGENTE YAWELL R09)
 Luego 2-3 líneas que repiten la palabra clave principal y venden el beneficio central.
 
-3-5 beneficios con ✅ (uno por línea)
+⚡ LO QUE HACE — si el producto tiene VARIAS funciones o usos (electrónica, wearables, herramientas, electrodomésticos), listalas ACÁ ARRIBA en un bloque bien visible, una función por línea, cada una con SU PROPIO emoji representativo (ej: ❤️ Mide tu frecuencia cardíaca / 🫁 Oxígeno en sangre (SpO2) / 😴 Seguimiento del sueño / 🏃 Múltiples modos deportivos / 🌡️ Temperatura de la piel). Es lo primero que ve el comprador después del título: tiene que ser lo más atractivo y escaneable de la publicación. Si el producto NO tiene funciones múltiples, omití este bloque.
 
-📌 CARACTERÍSTICAS TÉCNICAS — cada spec en línea propia con 🔹
+✅ 2-4 beneficios clave (uno por línea con ✅) — el "por qué conviene" (durabilidad, comodidad, diseño), NO repitas acá las funciones del bloque de arriba.
+
+📌 CARACTERÍSTICAS TÉCNICAS — los datos duros, cada spec en línea propia con 🔹 (material, batería, conectividad, compatibilidad, etc.). NO repitas acá las funciones ya listadas en "LO QUE HACE"
 
 ${v.caracteristicas?.match(/incluye|caja|paquete|trae|viene con|kit|estuche|cable|cargador|manual/i) ? "📦 CONTENIDO DEL PAQUETE — listá SOLO lo que los datos dicen que incluye\n\n" : ""}${v.garantia?.trim() ? "🛡️ GARANTÍA — escribí en una línea la garantía indicada en los datos comerciales\n\n" : ""}💳 PAGO Y 🚚 ENVÍO — una sección breve combinada, según los datos comerciales de arriba
 
