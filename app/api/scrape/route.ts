@@ -108,7 +108,7 @@ async function extractWithGroq(pageContent: string): Promise<Record<string, stri
     const completion = await groq.chat.completions.create({
       model: DEFAULT_MODEL,
       temperature: 0.1,
-      max_tokens: 800,
+      max_tokens: 1600,
       messages: [
         {
           role: "system",
@@ -118,11 +118,13 @@ async function extractWithGroq(pageContent: string): Promise<Record<string, stri
         {
           role: "user",
           content: `Extraé los datos y devolvé SOLO un JSON válido con esta estructura (sin texto extra, sin markdown):
-{"producto":"nombre del producto INCLUYENDO marca y modelo/código si aparecen","marca":"marca y modelo/código exactos","categoria":"categoría","condicion":"Nuevo|Usado|Reacondicionado","caracteristicas":"características separadas por comas o saltos de línea"}
+{"producto":"nombre del producto INCLUYENDO marca y modelo/código si aparecen","marca":"marca y modelo/código exactos","categoria":"categoría","condicion":"Nuevo|Usado|Reacondicionado","caracteristicas":"TODAS las specs como pares 'Atributo: Valor', una por línea"}
 
 Reglas:
 - CONSERVÁ SIEMPRE el modelo o código del producto (ej: R09, A54, Pro Max, XR) tanto en "producto" como en "marca": es lo más importante para que el comprador lo encuentre. Nunca lo omitas si aparece en el contenido.
 - "producto" debe ser conciso pero completo (ej: "Anillo Inteligente Yawell R09"), sin frases de marketing largas.
+- CARACTERÍSTICAS — capturá TODA la ficha técnica: recorré la tabla de especificaciones / "Descripción del producto" / "Atributos del producto" y extraé CADA fila como "Atributo: Valor" en su propia línea (material, tamaño/talla, peso, batería/autonomía, resistencia al agua, sensores, conectividad, sistema operativo/compatibilidad, certificaciones, contenido del paquete, etc.). NO resumas ni descartes filas: cuantas más specs reales, mejor.
+- COMPATIBILIDAD / SISTEMA OPERATIVO: incluí TODAS las plataformas que aparezcan (ej: si dice "Android, iOS" poné "Sistema operativo: Android y iOS"). NUNCA recortes a una sola plataforma ni afirmes incompatibilidad con otra.
 - Devolvé todo en español: traducí los términos en inglés (ej: "waterproof" → "resistente al agua", "smart ring" → "anillo inteligente"). NO traduzcas ni alteres marcas ni modelos/códigos (Yawell, R09, etc.).
 - No inventes datos. Si un campo no está disponible, devolvé cadena vacía.
 
