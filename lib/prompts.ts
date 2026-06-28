@@ -149,7 +149,7 @@ Luego 2-3 líneas que repiten la palabra clave principal y venden el beneficio c
 
 ${v.caracteristicas?.match(/incluye|caja|paquete|trae|viene con|kit|estuche|cable|cargador|manual/i) ? "📦 CONTENIDO DEL PAQUETE — listá SOLO lo que los datos dicen que incluye\n\n" : ""}${v.garantia?.trim() ? "🛡️ GARANTÍA — escribí en una línea la garantía indicada en los datos comerciales\n\n" : ""}💳 PAGO Y 🚚 ENVÍO — una sección breve combinada, según los datos comerciales de arriba
 
-${v.condicion !== "Nuevo" ? "🔎 ESTADO DEL PRODUCTO — descripción honesta del estado real, marcas de uso y qué se entrega\n\n" : ""}❓ PREGUNTAS FRECUENTES — 3 a 5 preguntas típicas de compradores de este producto con su respuesta breve (1-2 líneas), basadas SOLO en los datos provistos
+${v.condicion !== "Nuevo" ? "🔎 ESTADO DEL PRODUCTO — descripción honesta del estado real, marcas de uso y qué se entrega\n\n" : ""}❓ PREGUNTAS FRECUENTES — 3 a 5 preguntas típicas de compradores de este producto con su respuesta breve (1-2 líneas), basadas SOLO en los datos provistos. NO incluyas preguntas cuya respuesta sea NEGAR una compatibilidad o característica por falta de datos (ej: si no está confirmado que funcione SOLO con iOS, NO pongas "¿Es compatible con Android? No"). Solo preguntas que puedas responder con un dato real y afirmativo.
 
 Cierre de 1 línea invitando a consultar por el chat de la publicación.
 
