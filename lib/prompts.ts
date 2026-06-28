@@ -138,24 +138,24 @@ TÍTULOS ALTERNATIVOS
 2. [variante long-tail, máximo 60 caracteres, apuntando a una búsqueda más específica]
 
 DESCRIPCIÓN
-[Esquema:
+[Esquema en TEXTO PLANO, SIN NINGÚN EMOJI ni icono. Para los títulos de sección usá MAYÚSCULAS entre dos líneas de signos '=' (ej: una línea "=====", luego "TODO LO QUE HACE", luego otra "====="). Para las viñetas usá un guion '-' al inicio de cada línea.
 
-Primera línea: palabra clave principal + producto en mayúsculas con UN emoji (ej: 💍 ANILLO INTELIGENTE YAWELL R09)
+Primera línea: el producto en MAYÚSCULAS con la palabra clave principal (ej: ANILLO INTELIGENTE YAWELL R09 - MONITOR DE SALUD). Sin emojis.
 Luego 2-3 líneas que repiten la palabra clave principal y venden el beneficio central.
 
-⚡ LO QUE HACE — si el producto tiene VARIAS funciones o usos (electrónica, wearables, herramientas, electrodomésticos), listalas ACÁ ARRIBA en un bloque bien visible, una función por línea, cada una con SU PROPIO emoji representativo (ej: ❤️ Mide tu frecuencia cardíaca / 🫁 Oxígeno en sangre (SpO2) / 😴 Seguimiento del sueño / 🏃 Múltiples modos deportivos / 🌡️ Temperatura de la piel). Es lo primero que ve el comprador después del título: tiene que ser lo más atractivo y escaneable de la publicación. Si el producto NO tiene funciones múltiples, omití este bloque.
+Sección "TODO LO QUE HACE" — si el producto tiene VARIAS funciones o usos (electrónica, wearables, herramientas, electrodomésticos), listalas ACÁ ARRIBA como PRIMER bloque, una función por línea con guion (ej: "- Frecuencia cardíaca en tiempo real"). Es lo primero que ve el comprador después del título: tiene que ser lo más atractivo y escaneable. Si el producto NO tiene funciones múltiples, omití este bloque.
 
-✅ 2-4 beneficios clave (uno por línea con ✅) — el "por qué conviene" (durabilidad, comodidad, diseño), NO repitas acá las funciones del bloque de arriba.
+Sección "POR QUÉ ELEGIRLO" — 2-4 beneficios clave (uno por línea con guion): el "por qué conviene" (durabilidad, comodidad, diseño). NO repitas las funciones del bloque anterior.
 
-📌 CARACTERÍSTICAS TÉCNICAS — los datos duros, cada spec en línea propia con 🔹 (material, batería, conectividad, compatibilidad, etc.). NO repitas acá las funciones ya listadas en "LO QUE HACE"
+Sección "CARACTERÍSTICAS TÉCNICAS" — los datos duros, uno por línea con guion (material, batería, conectividad, compatibilidad, etc.). NO repitas las funciones ya listadas.
 
-${v.caracteristicas?.match(/incluye|caja|paquete|trae|viene con|kit|estuche|cable|cargador|manual/i) ? "📦 CONTENIDO DEL PAQUETE — listá SOLO lo que los datos dicen que incluye\n\n" : ""}${v.garantia?.trim() ? "🛡️ GARANTÍA — escribí en una línea la garantía indicada en los datos comerciales\n\n" : ""}💳 PAGO Y 🚚 ENVÍO — una sección breve combinada, según los datos comerciales de arriba
+${v.caracteristicas?.match(/incluye|caja|paquete|trae|viene con|kit|estuche|cable|cargador|manual/i) ? 'Sección "CONTENIDO DEL PAQUETE" — listá con guiones SOLO lo que los datos dicen que incluye\n\n' : ""}${v.garantia?.trim() ? 'Sección "GARANTÍA" — escribí en una línea la garantía indicada en los datos comerciales\n\n' : ""}Sección "PAGO Y ENVÍO" — una sección breve combinada, según los datos comerciales de arriba
 
-${v.condicion !== "Nuevo" ? "🔎 ESTADO DEL PRODUCTO — descripción honesta del estado real, marcas de uso y qué se entrega\n\n" : ""}❓ PREGUNTAS FRECUENTES — 3 a 5 preguntas típicas de compradores de este producto con su respuesta breve (1-2 líneas), basadas SOLO en los datos provistos. NO incluyas preguntas cuya respuesta sea NEGAR una compatibilidad o característica por falta de datos (ej: si no está confirmado que funcione SOLO con iOS, NO pongas "¿Es compatible con Android? No"). Solo preguntas que puedas responder con un dato real y afirmativo.
+${v.condicion !== "Nuevo" ? 'Sección "ESTADO DEL PRODUCTO" — descripción honesta del estado real, marcas de uso y qué se entrega\n\n' : ""}Sección "PREGUNTAS FRECUENTES" — 3 a 5 preguntas típicas de compradores de este producto con su respuesta breve (1-2 líneas), basadas SOLO en los datos provistos. NO incluyas preguntas cuya respuesta sea NEGAR una compatibilidad o característica por falta de datos (ej: si no está confirmado que funcione SOLO con iOS, NO pongas "¿Es compatible con Android? No"). Solo preguntas que puedas responder con un dato real y afirmativo.
 
 Cierre de 1 línea invitando a consultar por el chat de la publicación.
 
-IMPORTANTE: no escribas ningún encabezado de sección (con su emoji) si no tenés contenido real para esa sección. Mejor omitir la sección entera que dejar un emoji solo.]
+IMPORTANTE: PROHIBIDO usar emojis o iconos en cualquier parte de la descripción (ML los rechaza). No escribas un encabezado de sección si no tenés contenido real para esa sección.]
 
 FICHA TÉCNICA
 [Atributos para cargar en el formulario de ML, uno por línea, formato "Atributo: Valor".
