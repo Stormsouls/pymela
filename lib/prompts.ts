@@ -101,7 +101,7 @@ HASHTAGS
       "REGLAS DE DESCRIPCIÓN: " +
       "las primeras 3 líneas son las más importantes: deben repetir la palabra clave principal y el beneficio central " +
       "(NUNCA abrir con saludos tipo 'Hola, gracias por visitarnos'); " +
-      "texto plano sin HTML, emojis solo como bullets y separadores de sección; " +
+      "texto plano SIN HTML y SIN NINGÚN EMOJI ni icono (MercadoLibre los rechaza y puede suspender la publicación): para que igual sea llamativa y escaneable usá MAYÚSCULAS en los títulos de sección, líneas de signos '=' como separadores y un guion '-' al inicio de cada viñeta; " +
       "entre 350 y 600 palabras; bloques cortos, nada de párrafos largos; " +
       "responder dentro del texto las dudas típicas del comprador; " +
       "si el producto es usado o reacondicionado, describir el estado real con honestidad para evitar reclamos. " +
